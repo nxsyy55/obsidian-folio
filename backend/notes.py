@@ -14,7 +14,7 @@ def _yaml_value(value, force_quote=False):
     # characters that would break YAML parsing
     if (s.startswith(("{", "[", "'", '"', "&", "*", "!", "|", ">", "%", "@", "`"))
             or s.startswith(("- ", "? "))
-            or re.search(r'[\#\[\]\{\}]', s)):
+            or re.search(r'[\#\[\]\{\}]|: ', s)):
         return f'"{s}"'
     return s
 

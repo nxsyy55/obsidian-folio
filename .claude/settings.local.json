@@ -16,7 +16,17 @@
       "Bash(mv config.json backend/config.json)",
       "Bash(mv cache.json backend/cache.json)",
       "Bash(python -c \"import vault_tool; print\\(''imports OK''\\)\")",
-      "Bash(python vault_tool.py --help)"
+      "Bash(python vault_tool.py --help)",
+      "Bash(npm run:*)",
+      "Bash(npm install:*)",
+      "Bash(python vault_tool.py book --help)",
+      "Bash(python vault_tool.py movie --help)",
+      "Bash(python -m pytest --collect-only)",
+      "Bash(uv run:*)",
+      "Bash(uv add:*)",
+      "Bash(\"backend/.venv/Scripts/python\" -m pytest --collect-only -q)",
+      "Bash(\"backend/.venv/Scripts/python\" -m pytest tests/test_notes.py -v)",
+      "Bash(\"backend/.venv/Scripts/python\" -m pytest -v)"
     ]
   }
 }
