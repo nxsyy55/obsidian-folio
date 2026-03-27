@@ -1,5 +1,6 @@
 from datetime import datetime
 import re
+import sys
 
 
 def _yaml_value(value, force_quote=False):
@@ -184,16 +185,16 @@ def write_note(content, filepath):
     Returns:
         True on success, False if skipped.
     """
-    if filepath.exists():
+    if filepath.exists() and sys.stdin.isatty():
         try:
             answer = input(f"File already exists: {filepath.name}. Overwrite? [y/N] ")
         except EOFError:
-            print("Skipping (no input available).")
-            return False
-        if answer.strip().lower() != "y":
-            return False
+            pass
+        else:
+            if answer.strip().lower() != "y":
+                return False
 
     filepath.parent.mkdir(parents=True, exist_ok=True)
     filepath.write_text(content, encoding="utf-8")
-    print(f"Created: {filepath.name}")
+    print(f"Created: {filepath}")
     return True

@@ -122,6 +122,11 @@ def disambiguate(results, query):
         print(f"Found: {r['title']} ({r['type']}, {r.get('year', '?')})")
         return r
 
+    # Non-interactive mode (e.g. called from Obsidian plugin): emit JSON and exit
+    if not sys.stdin.isatty():
+        print(f"CANDIDATES_JSON: {json.dumps(results, ensure_ascii=False)}")
+        sys.exit(0)
+
     print(f"\nFound {len(results)} results for '{query}':")
     for i, r in enumerate(results, 1):
         sub = f" / {r['sub_title']}" if r.get("sub_title") else ""
@@ -156,6 +161,9 @@ def cmd_book(args, config):
         if not result:
             print("ISBN not found on Douban.")
             return
+    elif args.id:
+        print(f"Fetching book ID: {args.id}...")
+        result = {"id": args.id, "type": "book", "title": args.title or ""}
     else:
         print(f"Searching Douban for book: {args.title}...")
         results = search_douban(args.title, media_type="book")
@@ -190,13 +198,17 @@ def cmd_movie(args, config):
     cookies = config.get("douban_cookies", {}) or None
 
     # Search
-    print(f"Searching Douban for: {args.title}...")
-    media_type = args.type if args.type else None
-    # For movies, search without type filter to get all results, then user picks
-    results = search_douban(args.title, media_type=media_type)
-    result = disambiguate(results, args.title)
-    if not result:
-        return
+    if args.id:
+        print(f"Fetching movie ID: {args.id}...")
+        result = {"id": args.id, "type": args.type or "movie", "title": args.title or ""}
+    else:
+        print(f"Searching Douban for: {args.title}...")
+        media_type = args.type if args.type else None
+        # For movies, search without type filter to get all results, then user picks
+        results = search_douban(args.title, media_type=media_type)
+        result = disambiguate(results, args.title)
+        if not result:
+            return
 
     # Override type if user specified
     if args.type:
@@ -242,12 +254,14 @@ def main():
     book_parser = subparsers.add_parser("book", help="Create a book note from Douban")
     book_parser.add_argument("title", nargs="?", default=None, help="Book title to search")
     book_parser.add_argument("--isbn", help="Search by ISBN instead of title")
+    book_parser.add_argument("--id", help="Douban subject ID (skips search, fetches directly)")
     book_parser.add_argument("--type", default="book", help="Override type (default: book)")
 
     # movie
     movie_parser = subparsers.add_parser("movie", help="Create a movie/TV note from Douban")
-    movie_parser.add_argument("title", help="Movie/show title to search")
+    movie_parser.add_argument("title", nargs="?", default=None, help="Movie/show title to search")
     movie_parser.add_argument("--type", help="Override type (movie/teleplay)")
+    movie_parser.add_argument("--id", help="Douban subject ID (skips search, fetches directly)")
 
     args = parser.parse_args()
 
@@ -255,8 +269,12 @@ def main():
         parser.print_help()
         sys.exit(1)
 
-    if args.command == "book" and not args.title and not args.isbn:
-        print("Error: provide a title or --isbn")
+    if args.command == "book" and not args.title and not args.isbn and not args.id:
+        print("Error: provide a title, --isbn, or --id")
+        sys.exit(1)
+
+    if args.command == "movie" and not args.title and not args.id:
+        print("Error: provide a title or --id")
         sys.exit(1)
 
     # Load config and inject vault_path from env

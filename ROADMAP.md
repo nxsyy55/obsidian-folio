@@ -108,11 +108,11 @@ Gitignored (never committed): `.env`, `config.json`, `cache.json`, `main.js`, `n
 **Branch:** `feat/obsidian-gui` (continued)
 **Goal:** Full interactive search experience inside Obsidian.
 
-- [ ] Disambiguation modal — when Python outputs multiple results, show picker in Obsidian
-- [ ] Progress indicator during fetch (spinner notice)
-- [ ] Graceful error states: Python not found, missing API key, network failure
-- [ ] ISBN search command
-- [ ] TV/teleplay type toggle in movie command
+- [x] Disambiguation modal — when Python outputs multiple results, show picker in Obsidian
+- [x] Progress indicator during fetch (persistent notice, auto-dismissed on completion)
+- [x] Graceful error states: Python not found, missing API key, network failure
+- [x] ISBN search command
+- [x] TV/teleplay type toggle in movie command
 
 ---
 
