@@ -1,7 +1,13 @@
 [project]
-name = "scripts"
+name = "douban-obsidian-backend"
 version = "0.1.0"
-description = "Add your description here"
-readme = "README.md"
-requires-python = ">=3.12"
-dependencies = []
+description = "Python backend for douban-obsidian: scrape Douban and write Obsidian notes"
+readme = "../README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "requests",
+    "beautifulsoup4",
+    "thefuzz",
+    "firecrawl-py",
+    "python-dotenv",
+]
