@@ -95,12 +95,12 @@ Gitignored (never committed): `.env`, `config.json`, `cache.json`, `main.js`, `n
 **Branch:** `feat/obsidian-gui`
 **Goal:** A loadable Obsidian plugin that invokes the Python backend.
 
-- [ ] `src/main.ts` — plugin entry point, registers commands
-- [ ] `src/settings.ts` — settings tab: Python executable path, path to `config.json`, path to `.env`
-- [ ] `src/modal.ts` — simple text input modal for book/movie title
-- [ ] Spawn `python backend/vault_tool.py book "<title>"` as child process
-- [ ] Capture stdout/stderr; surface errors as Obsidian notices
-- [ ] On success: show notice + open created note via Obsidian API
+- [x] `src/main.ts` — plugin entry point, registers commands
+- [x] `src/settings.ts` — settings tab: Python executable path, path to `config.json`, path to `.env`
+- [x] `src/modal.ts` — simple text input modal for book/movie title
+- [x] Spawn `python backend/vault_tool.py book "<title>"` as child process
+- [x] Capture stdout/stderr; surface errors as Obsidian notices
+- [x] On success: show notice + open created note via Obsidian API
 
 ---
 

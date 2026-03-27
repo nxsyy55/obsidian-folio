@@ -1,3 +1,6 @@
+# Claude Code local machine settings
+.claude/settings.local.json
+
 # Secrets / local config (never commit)
 .env
 config.json
