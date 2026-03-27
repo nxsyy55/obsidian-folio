@@ -40,12 +40,16 @@ After enabling, go to **Settings → Douban Notes**:
 
 ## Usage
 
-Use the Command Palette (`Ctrl/Cmd+P`) and search for:
+Open the Command Palette (`Ctrl+P`) and search for **Douban**:
 
-- **Douban: Add book note** — search by title or ISBN
-- **Douban: Add movie note** — search by title (supports teleplay toggle)
+| Command | What it does |
+|---------|-------------|
+| **Douban Notes: Add Book Note** | Search by title, pick result, create note |
+| **Douban Notes: Add Movie Note** | Search by title with movie/teleplay toggle |
+| **Douban Notes: Add Book or Movie Note** | Combined search — choose type in the modal |
+| **Douban Notes: Add Book Note by ISBN** | Paste an ISBN for exact lookup |
 
-Notes are created in your configured inbox folder — review and move them to the right location.
+Notes are created in your configured inbox folder. Review and move them to their final location.
 
 ## Project Structure
 
@@ -93,9 +97,18 @@ Plugin (main.ts)
 
 **Movie IMDb field empty:** Firecrawl scraping failed. Check your Firecrawl API key in Settings → Douban Notes.
 
-**Stale cache data:** Delete the `.obsidian/plugins/douban-obsidian/cache.json` entry for the item and re-run the command.
+**Stale or wrong metadata:** Delete the relevant entry from `.obsidian/plugins/douban-obsidian/cache.json` and re-run the command. Keys are `book_<id>` and `movie_<id>`.
 
 **Inbox folder missing:** Create the folder in your vault first, then retry.
+
+**"No results found" for a valid title:** Try the original Chinese title, or use ISBN lookup for books. Douban's suggest API is sensitive to exact spelling.
+
+**Note not opening after creation:** The note is created in your inbox folder — open it manually from the file explorer if the automatic open fails.
+
+## Known Issues
+
+**Windows: git worktree directory not deleted after `git worktree remove`**
+On Windows, `git worktree remove` unregisters the worktree from git but cannot delete the directory if any process (e.g. the terminal) has its CWD inside it. Manually delete `.worktrees/<branch-name>/` after closing any terminal sessions pointing to it, or restart the machine.
 
 ## Standalone Python CLI
 
