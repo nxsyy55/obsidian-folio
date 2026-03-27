@@ -1,107 +1,115 @@
 # douban-obsidian
 
-A Python CLI that creates Obsidian notes from Douban metadata for books and movies. Planned to grow into a full Obsidian plugin with a GUI frontend — see [ROADMAP.md](ROADMAP.md).
+An Obsidian plugin that creates notes from Douban metadata for books and movies.
 
-## Quick Start
+## Prerequisites
 
-**1. Install Python dependencies:**
+- **Obsidian desktop** (the plugin is desktop-only)
+- **Firecrawl API key** — free tier at https://www.firecrawl.dev/ (used to fetch book/movie detail pages)
 
-```bash
-cd backend
-uv sync
-# or: pip install requests beautifulsoup4 thefuzz firecrawl-py python-dotenv
-```
+No Python required.
 
-**2. Configure secrets** — copy `.env.example` → `.env` (repo root) and fill in:
+## Setup
 
-```
-FIRECRAWL_API_KEY=your_key_here
-OBSIDIAN_VAULT_PATH=J:\Notes Library
-```
+### 1. Install the plugin
 
-**3. Configure settings** — copy `config.example.json` → `backend/config.json` and set your directory names:
-
-```json
-{
-  "book_dir": "ReadNotes",
-  "watch_dir": "WatchNotes",
-  "inbox_dir": "inbox",
-  "cache_file": "cache.json",
-  "vault_name": "My Notes",
-  "request_delay": 2
-}
-```
-
-**4. Run:**
+**Option A — Build from source:**
 
 ```bash
-cd backend
-
-# Book by title
-python vault_tool.py book "百年孤独"
-
-# Book by ISBN (more precise)
-python vault_tool.py book --isbn 9787544253994
-
-# Movie
-python vault_tool.py movie "盗梦空间"
-
-# TV show
-python vault_tool.py movie "3年A班" --type teleplay
+npm install
+npm run build
 ```
 
-Notes are created in `inbox/` inside your vault — review and move them to the right folder.
+Copy `main.js`, `manifest.json`, `styles.css` to `.obsidian/plugins/douban-obsidian/` in your vault.
 
-## Requirements
+**Option B — BRAT (once released):**
 
-- Python 3.9+ with `uv` (or `pip`)
-- Firecrawl API key — free tier at https://www.firecrawl.dev/
-- Dependencies: `requests`, `beautifulsoup4`, `thefuzz`, `firecrawl-py`, `python-dotenv`
+Install [BRAT](https://obsidian.md/plugins?id=obsidian42-brat) → Add Beta Plugin → `https://github.com/nxsyy55/douban-notes-obs`
+
+### 2. Configure the plugin
+
+After enabling, go to **Settings → Douban Notes**:
+
+| Setting | What to enter |
+|---------|---------------|
+| **Firecrawl API key** | From https://www.firecrawl.dev/app/api-keys |
+| **Inbox folder** | Vault subfolder for new notes (default: `inbox`) |
+| **Request delay** | Seconds between requests (default: 2) |
+
+> Make sure the inbox folder exists in your vault before running.
+
+## Usage
+
+Use the Command Palette (`Ctrl/Cmd+P`) and search for:
+
+- **Douban: Add book note** — search by title or ISBN
+- **Douban: Add movie note** — search by title (supports teleplay toggle)
+
+Notes are created in your configured inbox folder — review and move them to the right location.
 
 ## Project Structure
 
 ```
 douban-obsidian/
 ├── .github/workflows/release.yml  # Auto-publish on git tag
-├── src/                           # Obsidian plugin TypeScript (future)
-├── backend/                       # Python scraping backend
+├── src/                           # Obsidian plugin TypeScript
+│   ├── main.ts                    # Plugin entry point
+│   ├── settings.ts                # Settings tab
+│   ├── modal.ts                   # Search + disambiguation modals
+│   ├── douban.ts                  # Douban API + Firecrawl fetching
+│   ├── notes.ts                   # Markdown note renderers
+│   └── cache.ts                   # Vault-backed metadata cache
+├── backend/                       # Standalone Python CLI (power users)
 │   ├── vault_tool.py              # CLI entry point
 │   ├── douban.py                  # Douban search + scraping
 │   ├── notes.py                   # Markdown note generation
-│   ├── config.json                # Your settings (gitignored)
-│   ├── cache.json                 # Auto-generated cache (gitignored)
 │   ├── pyproject.toml
 │   └── uv.lock
 ├── manifest.json                  # Obsidian plugin manifest
 ├── package.json                   # Plugin build deps (esbuild, TypeScript)
 ├── tsconfig.json
-├── esbuild.config.mjs
-├── config.example.json            # Settings template (no secrets)
-├── .env.example                   # Env var template (no secrets)
-└── ROADMAP.md
+└── esbuild.config.mjs
 ```
 
 ## Architecture
 
 ```
-CLI (vault_tool.py)
-  ├── douban.py: search → disambiguate → fetch detail → cache
-  ├── notes.py: render frontmatter + body → write .md
-  └── Open note in Obsidian via URI protocol
+Plugin (main.ts)
+  ├── modal.ts: search input → disambiguation list
+  ├── douban.ts: Douban JSON APIs + Firecrawl detail fetch → cache
+  └── notes.ts: render frontmatter + body → vault.create()
 ```
 
 | Module | Responsibility |
 |--------|---------------|
-| `vault_tool.py` | CLI, config loading, env injection, command dispatch |
-| `douban.py` | Douban APIs, Firecrawl page scraping, metadata cache |
-| `notes.py` | YAML frontmatter, markdown body, file writing |
-
-**Secrets split:** `vault_path` comes from `OBSIDIAN_VAULT_PATH` env var. `cache_file` in `config.json` is a relative path resolved from the `backend/` directory.
+| `main.ts` | Command registration, orchestration |
+| `settings.ts` | Firecrawl key, inbox dir, request delay |
+| `modal.ts` | Search input and result disambiguation UI |
+| `douban.ts` | Douban search/ISBN APIs, Firecrawl scraping |
+| `notes.ts` | YAML frontmatter, markdown body rendering |
+| `cache.ts` | JSON cache via vault adapter |
 
 ## Troubleshooting
 
-**Movie IMDb field empty:** Firecrawl scraping failed. Check `FIRECRAWL_API_KEY` in `.env`.
+**Movie IMDb field empty:** Firecrawl scraping failed. Check your Firecrawl API key in Settings → Douban Notes.
 
-**Stale cache data:** Open `backend/cache.json`, delete the `book_<id>` or `movie_<id>` entry, re-run.
+**Stale cache data:** Delete the `.obsidian/plugins/douban-obsidian/cache.json` entry for the item and re-run the command.
 
-**`OBSIDIAN_VAULT_PATH` not set:** Add it to your `.env` file in the repo root.
+**Inbox folder missing:** Create the folder in your vault first, then retry.
+
+## Standalone Python CLI
+
+The `backend/` directory contains a standalone Python CLI for power users who prefer the terminal:
+
+```bash
+cd backend
+pip install requests beautifulsoup4 thefuzz firecrawl-py python-dotenv
+# or: uv sync
+
+python vault_tool.py book "百年孤独"
+python vault_tool.py book --isbn 9787544253994
+python vault_tool.py movie "盗梦空间"
+python vault_tool.py movie "3年A班" --type teleplay
+```
+
+See `backend/` for configuration details. The plugin does not depend on this CLI.
