@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python test_inbox_fix.py)",
+      "Bash(python fix_inbox_notes.py)",
+      "Bash(rm -f batch_import_log.txt batch_import_err.txt batch_fast_furious.log ff_run2.log ff_run3.log ff_run4.log ff_run5.log batch_movies.log batch_movies2.log batch_log.txt batch_log_copy.txt retry_log.txt retry2_log.txt retry3_log.txt split_无间道.json split_ff.json split_速度与激情.json split_ff2.json split_ff3.json split_all_movies.json split_all_books.json batch_approved.json batch_retry.json batch_retry2.json batch_retry3.json batch_import.py test_inbox_fix.py fix_inbox_notes.py koreader_merge.py \"config - 副本.json\" INBOX_FIX_SUMMARY.md)",
+      "Bash(rm -rf __pycache__)",
+      "WebFetch(domain:docs.firecrawl.dev)",
+      "Bash(ls -la \"I:\\\\obsi_plug\\\\inbox\"\" 2>/dev/null || dir \"I:obsi_pluginbox \")",
+      "Bash(cd:*)",
+      "Bash(mv vault_tool.py backend/)",
+      "Bash(mv douban.py backend/)",
+      "Bash(mv notes.py backend/)",
+      "Bash(mv pyproject.toml backend/)",
+      "Bash(mv uv.lock backend/)",
+      "Bash(mv config.json backend/config.json)",
+      "Bash(mv cache.json backend/cache.json)",
+      "Bash(python -c \"import vault_tool; print\\(''imports OK''\\)\")",
+      "Bash(python vault_tool.py --help)"
+    ]
+  }
+}

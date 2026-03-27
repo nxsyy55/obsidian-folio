@@ -1,0 +1,21 @@
+# Secrets / local config (never commit)
+.env
+config.json
+cache.json
+
+# Generated build output
+main.js
+
+# Node
+node_modules/
+
+# Python
+backend/__pycache__/
+backend/.venv/
+__pycache__/
+*.py[oc]
+.venv/
+build/
+dist/
+wheels/
+*.egg-info

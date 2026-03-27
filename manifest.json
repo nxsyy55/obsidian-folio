@@ -1,0 +1,10 @@
+{
+  "id": "douban-obsidian",
+  "name": "Douban Notes",
+  "version": "0.1.0",
+  "minAppVersion": "1.0.0",
+  "description": "Create Obsidian notes for books and movies from Douban",
+  "author": "",
+  "authorUrl": "",
+  "isDesktopOnly": true
+}
