@@ -4,6 +4,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Setup
 
+**Plugin (TypeScript):**
+
+```bash
+npm install
+npm run build
+```
+
+Copy `main.js`, `manifest.json`, `styles.css` to `.obsidian/plugins/douban-obsidian/` in your vault. Configure Firecrawl API key and inbox folder in Settings → Douban Notes.
+
+**Standalone Python CLI** (optional, not required by the plugin):
+
 ```bash
 cd backend
 pip install requests beautifulsoup4 thefuzz firecrawl-py python-dotenv
@@ -21,6 +32,10 @@ Copy `config.example.json` → `backend/config.json` and set `vault_name` and di
 
 ## Running
 
+The plugin is self-contained — install it in Obsidian, configure your Firecrawl API key in Settings → Douban Notes, and use the Command Palette to add book/movie notes.
+
+**Standalone Python CLI** (for power users, not required by the plugin):
+
 ```bash
 cd backend
 python vault_tool.py book "书名"
@@ -31,35 +46,28 @@ python vault_tool.py movie "剧名" --type teleplay
 
 ## Architecture
 
-Three-module pipeline in `backend/`:
+Five TypeScript modules in `src/`:
 
-- `backend/vault_tool.py` — CLI entry point (argparse), config loading, orchestrates book/movie commands
-- `backend/douban.py` — Scraping engine: search → detail fetch → cache. All HTTP logic lives here
-- `backend/notes.py` — Pure renderer: takes metadata dicts → YAML frontmatter + markdown body → writes file
+- `src/main.ts` — Plugin entry point: registers commands, wires search → disambiguation → fetch → write
+- `src/settings.ts` — Settings tab: `firecrawlApiKey`, `inboxDir`, `requestDelay`
+- `src/modal.ts` — Search input modal + disambiguation list modal (unchanged from v0.3)
+- `src/douban.ts` — All Douban HTTP: `searchDouban`, `searchByIsbn`, `fetchBookDetail`, `fetchMovieDetail`
+- `src/notes.ts` — Pure renderers: `renderBookNote`, `renderMovieNote` → markdown string
+- `src/cache.ts` — Cache read/write via vault adapter (`book_<id>` / `movie_<id>` keys)
 
-**Data flow:** CLI args → search Douban (JSON API via `requests`) → disambiguate → fetch detail page (via Firecrawl) → parse HTML (BeautifulSoup) → render note → write to `inbox/`.
+**Data flow:** Command → search Douban JSON API (`requestUrl`) → disambiguate → fetch detail (Firecrawl primary, `requestUrl`+`DOMParser` fallback) → render note → `vault.create(inboxDir/title.md)`
 
-**Config/secrets split:**
-- `OBSIDIAN_VAULT_PATH` — vault absolute path, from `.env`
-- `FIRECRAWL_API_KEY` — Firecrawl API key, from `.env`
-- `backend/config.json` — non-sensitive settings (`vault_name`, `book_dir`, `watch_dir`, `inbox_dir`, `cache_file`, `request_delay`)
-- `cache_file` in config.json is a relative path resolved from `backend/` via `Path(__file__).parent`
+**Firecrawl integration:** `POST https://api.firecrawl.dev/v1/scrape` with `Authorization: Bearer <key>`. Structured extraction with schema for books and movies. Falls back to HTML parse on failure.
 
-**Caching:** `backend/cache.json` stores fetched metadata keyed `book_<id>` / `movie_<id>`. Delete an entry to force re-fetch.
+**Cache:** JSON file at `.obsidian/plugins/douban-obsidian/cache.json` via `vault.adapter`. Delete an entry to force re-fetch.
 
-**Scraping strategy (`backend/douban.py`):**
-- Search: `subject_suggest` JSON API via `requests` (no auth, no JS needed)
-- ISBN lookup: `requests` GET with redirect follow (extracts ID from final URL)
-- Movie basic data: `subject_abstract` JSON API via `requests` (no auth needed)
-- Book detail page + movie detail page: **Firecrawl** (`_scrape_page(url)`) → HTML parsed by BeautifulSoup
-
-**Config keys** (`backend/config.json`): `vault_name`, `book_dir`, `watch_dir`, `inbox_dir`, `cache_file`, `request_delay`
+**Python backend** (`backend/`) is kept as a standalone CLI for power users. The plugin no longer depends on it.
 
 ## Key Constraints
 
-- Notes land in `inbox/` first; user moves them to final location
-- `requests` is kept for lightweight JSON APIs only; Firecrawl handles all HTML page fetches
-- `douban_cookies` in config is kept for legacy compatibility but no longer used for page fetches
+- Notes land in `inboxDir` first; user moves them to final location
+- Plugin uses Obsidian's `requestUrl` for Douban JSON APIs; Firecrawl handles all HTML detail page fetches
+- Python backend is standalone; plugin has no dependency on it
 
 ## Documentation Rule
 
