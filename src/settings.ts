@@ -2,15 +2,19 @@ import { App, PluginSettingTab, Setting } from 'obsidian';
 import type DoubanPlugin from './main';
 
 export interface DoubanSettings {
-    pythonPath: string;
-    backendDir: string;
-    envPath: string;
+    firecrawlApiKey: string;
+    inboxDir: string;
+    bookDir: string;
+    watchDir: string;
+    requestDelay: number;
 }
 
 export const DEFAULT_SETTINGS: DoubanSettings = {
-    pythonPath: 'python',
-    backendDir: '',
-    envPath: '',
+    firecrawlApiKey: '',
+    inboxDir: 'inbox',
+    bookDir: 'ReadNotes',
+    watchDir: 'WatchNotes',
+    requestDelay: 2,
 };
 
 export class DoubanSettingTab extends PluginSettingTab {
@@ -26,40 +30,41 @@ export class DoubanSettingTab extends PluginSettingTab {
         containerEl.empty();
 
         new Setting(containerEl)
-            .setName('Python path')
-            .setDesc('Path to the Python executable (e.g. "python" or "/usr/bin/python3").')
+            .setName('Firecrawl API key')
+            .setDesc('Get a free key at firecrawl.dev/app/api-keys. Used to fetch book and movie detail pages.')
             .addText(text =>
                 text
-                    .setPlaceholder('python')
-                    .setValue(this.plugin.settings.pythonPath)
+                    .setPlaceholder('fc-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx')
+                    .setValue(this.plugin.settings.firecrawlApiKey)
                     .onChange(async value => {
-                        this.plugin.settings.pythonPath = value;
+                        this.plugin.settings.firecrawlApiKey = value.trim();
                         await this.plugin.saveSettings();
                     })
             );
 
         new Setting(containerEl)
-            .setName('Backend directory')
-            .setDesc('Absolute path to the backend/ directory containing vault_tool.py.')
+            .setName('Inbox folder')
+            .setDesc('Vault subfolder where new notes are created. Must exist in your vault.')
             .addText(text =>
                 text
-                    .setPlaceholder('/path/to/Notes Library/Scripts/backend')
-                    .setValue(this.plugin.settings.backendDir)
+                    .setPlaceholder('inbox')
+                    .setValue(this.plugin.settings.inboxDir)
                     .onChange(async value => {
-                        this.plugin.settings.backendDir = value;
+                        this.plugin.settings.inboxDir = value.trim() || 'inbox';
                         await this.plugin.saveSettings();
                     })
             );
 
         new Setting(containerEl)
-            .setName('.env file path')
-            .setDesc('Absolute path to the .env file used by the Python backend.')
-            .addText(text =>
-                text
-                    .setPlaceholder('/path/to/Notes Library/Scripts/backend/.env')
-                    .setValue(this.plugin.settings.envPath)
+            .setName('Request delay (seconds)')
+            .setDesc('Seconds to wait between Douban requests. Increase if you hit rate limits.')
+            .addSlider(slider =>
+                slider
+                    .setLimits(0, 10, 1)
+                    .setValue(this.plugin.settings.requestDelay)
+                    .setDynamicTooltip()
                     .onChange(async value => {
-                        this.plugin.settings.envPath = value;
+                        this.plugin.settings.requestDelay = value;
                         await this.plugin.saveSettings();
                     })
             );
