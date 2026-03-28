@@ -91,8 +91,12 @@ export default class DoubanPlugin extends Plugin {
 
             if (results.length === 0) {
                 new BlankNoteModal(this.app, title, async type => {
-                    const content = renderBlankNote(title, type, options.template ?? null);
-                    await this.writeNote(title, content);
+                    try {
+                        const content = renderBlankNote(title, type, options.template ?? null);
+                        await this.writeNote(title, content);
+                    } catch (e) {
+                        new Notice(`Error: ${e instanceof Error ? e.message : String(e)}`, 8000);
+                    }
                 }).open();
                 return;
             }
@@ -111,7 +115,7 @@ export default class DoubanPlugin extends Plugin {
                     ...options,
                     category: selected.type === 'book' ? 'book' : 'movie',
                     mediaType: selected.type === 'teleplay' ? 'teleplay' : undefined,
-                });
+                }).catch(e => new Notice(`Error: ${e instanceof Error ? e.message : String(e)}`, 8000));
             }).open();
 
         } catch (e) {
