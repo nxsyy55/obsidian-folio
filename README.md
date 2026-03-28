@@ -1,7 +1,7 @@
 # 📚 Folio
 > Stop copying metadata, start writing your thoughts. Folio automates the creation of perfect book and movie notes within Obsidian.
 
-[English] | [简体中文](README_zh.md)
+[English] | [简体中文](./README_zh.md)
 ## 💡 What is Folio?
 
 Folio is an Obsidian plugin designed to supercharge your media note-taking efficiency. Its primary selling point is eliminating the friction between discovering a work and actually writing about it.

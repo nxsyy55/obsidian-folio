@@ -2,7 +2,7 @@
 
 > 停止搬运元数据，开始记录你的思考。Folio 自动为 Obsidian 创建完美的图书和电影笔记。
 
-[English](README.md) | [简体中文]
+[English](./README.md) | [简体中文]
 
 ---
 
