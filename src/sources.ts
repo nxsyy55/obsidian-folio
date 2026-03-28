@@ -228,12 +228,16 @@ export async function fetchOpenLibraryDetail(id: string, vault: Vault): Promise<
         const work = resp.json as Record<string, unknown>;
 
         // Fetch author names in parallel (each entry is { author: { key: "/authors/OL26320A" } })
-        const authorEntries = (work.authors as { author: { key: string } }[]) ?? [];
+        const authorEntries = Array.isArray(work.authors)
+            ? (work.authors as { author?: { key?: string } }[])
+            : [];
         const authorNames = await Promise.all(
             authorEntries.map(async entry => {
                 try {
+                    const key = entry?.author?.key;
+                    if (!key) return '';
                     const ar = await requestUrl({
-                        url: `https://openlibrary.org${entry.author.key}.json`,
+                        url: `https://openlibrary.org${key}.json`,
                         headers: { 'User-Agent': DEFAULT_UA },
                         throw: false,
                     });
