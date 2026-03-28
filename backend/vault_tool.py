@@ -26,7 +26,7 @@ from dotenv import load_dotenv
 SCRIPT_DIR = Path(__file__).parent
 sys.path.insert(0, str(SCRIPT_DIR))
 
-load_dotenv()
+load_dotenv(os.environ.get("ENV_FILE") or None)
 
 from douban import search_douban, search_by_isbn, fetch_book_detail, fetch_movie_detail
 from notes import render_book_note, render_movie_note, write_note

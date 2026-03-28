@@ -13,18 +13,28 @@ No Python required.
 
 ### 1. Install the plugin
 
-**Option A — Build from source:**
+**Build from source:**
 
 ```bash
 npm install
 npm run build
 ```
 
-Copy `main.js`, `manifest.json`, `styles.css` to `.obsidian/plugins/douban-obsidian/` in your vault.
+Create the plugin folder in your vault if it doesn't exist:
 
-**Option B — BRAT (once released):**
+```
+<vault>/.obsidian/plugins/douban-obsidian/
+```
 
-Install [BRAT](https://obsidian.md/plugins?id=obsidian42-brat) → Add Beta Plugin → `https://github.com/nxsyy55/douban-notes-obs`
+Copy these three files into it:
+
+```
+main.js
+manifest.json
+styles.css
+```
+
+Then in Obsidian: **Settings → Community Plugins → reload**, find **Douban Notes**, and enable it.
 
 ### 2. Configure the plugin
 
@@ -104,11 +114,6 @@ Plugin (main.ts)
 **"No results found" for a valid title:** Try the original Chinese title, or use ISBN lookup for books. Douban's suggest API is sensitive to exact spelling.
 
 **Note not opening after creation:** The note is created in your inbox folder — open it manually from the file explorer if the automatic open fails.
-
-## Known Issues
-
-**Windows: git worktree directory not deleted after `git worktree remove`**
-On Windows, `git worktree remove` unregisters the worktree from git but cannot delete the directory if any process (e.g. the terminal) has its CWD inside it. Manually delete `.worktrees/<branch-name>/` after closing any terminal sessions pointing to it, or restart the machine.
 
 ## Standalone Python CLI
 

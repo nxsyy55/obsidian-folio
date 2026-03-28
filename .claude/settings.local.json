@@ -26,7 +26,9 @@
       "Bash(uv add:*)",
       "Bash(\"backend/.venv/Scripts/python\" -m pytest --collect-only -q)",
       "Bash(\"backend/.venv/Scripts/python\" -m pytest tests/test_notes.py -v)",
-      "Bash(\"backend/.venv/Scripts/python\" -m pytest -v)"
+      "Bash(\"backend/.venv/Scripts/python\" -m pytest -v)",
+      "Bash(npx tsc:*)",
+      "Bash(ls:*)"
     ]
   }
 }
