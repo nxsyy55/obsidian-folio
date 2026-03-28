@@ -1,5 +1,5 @@
 # Claude Code local machine settings
-.claude/settings.local.json
+.claude/
 
 # Secrets / local config (never commit)
 .env
@@ -12,8 +12,18 @@ cache.json
 # Generated build output
 main.js
 
+# IDE
+.vscode/
+.idea/
+
+# Obsidian vault config
+.obsidian/
+
 # Node
 node_modules/
+
+# Build output
+dist/
 
 # Python (legacy, kept in case of temporary files)
 __pycache__/
