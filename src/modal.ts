@@ -109,6 +109,13 @@ export class DisambiguationModal extends Modal {
         contentEl.empty();
         this.titleEl.setText('Folio: Select Result');
 
+        const sourceLabel: Record<string, string> = {
+            douban: 'Douban',
+            imdb: 'IMDB',
+            openlibrary: 'Open Library',
+            googlebooks: 'Google Books',
+        };
+
         this.candidates.forEach((candidate) => {
             const row = contentEl.createDiv();
             row.style.padding = '0.5em 0.75em';
@@ -116,12 +123,6 @@ export class DisambiguationModal extends Modal {
             row.style.borderBottom = '1px solid var(--background-modifier-border)';
             row.style.borderRadius = '4px';
 
-            const sourceLabel: Record<string, string> = {
-                douban: 'Douban',
-                imdb: 'IMDB',
-                openlibrary: 'Open Library',
-                googlebooks: 'Google Books',
-            };
             const label = [
                 candidate.title,
                 candidate.sub_title ? ` / ${candidate.sub_title}` : '',
