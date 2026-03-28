@@ -158,13 +158,15 @@ export async function fetchIMDBDetail(id: string, vault: Vault): Promise<MovieMe
         const rawCountry = ld.countryOfOrigin;
         const countries: string[] = Array.isArray(rawCountry)
             ? (rawCountry as Record<string, unknown>[]).map(c => String(c.name ?? ''))
+            : rawCountry
+            ? [String((rawCountry as Record<string, unknown>).name ?? '')]
             : [];
 
         const result: MovieMetadata = {
             title: String(ld.name ?? ''),
             type,
             originalTitle: '',
-            genre: (ld.genre as string[]) ?? [],
+            genre: Array.isArray(ld.genre) ? (ld.genre as string[]) : ld.genre ? [String(ld.genre)] : [],
             datePublished: String(ld.datePublished ?? ''),
             director: directors,
             score: String((ld.aggregateRating as Record<string, unknown>)?.ratingValue ?? ''),
