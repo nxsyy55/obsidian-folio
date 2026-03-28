@@ -3,8 +3,8 @@
   "name": "Folio",
   "version": "1.0.0",
   "minAppVersion": "1.0.0",
-  "description": "Create Obsidian notes for books and movies. Searches Douban, IMDB, Open Library, and Google Books automatically.",
+  "description": "Create notes for books and movies. Searches Douban, IMDB, Open Library, and Google Books automatically.",
   "author": "Blue Double",
-  "authorUrl": "https://github.com/nxsyy55/obsidian-folio",
+  "authorUrl": "https://github.com/nxsyy55",
   "isDesktopOnly": false
 }
