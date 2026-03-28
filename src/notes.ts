@@ -1,5 +1,6 @@
+import type { FolioTemplate } from './settings';
+
 export interface BookMetadata {
-    doubanId: string;
     title: string;
     subTitle: string;
     originalTitle: string;
@@ -13,12 +14,9 @@ export interface BookMetadata {
     producer: string;
     isbn: string;
     url: string;
-    totalPage: string;
-    price: string;
 }
 
 export interface MovieMetadata {
-    doubanId: string;
     title: string;
     type: 'movie' | 'teleplay';
     originalTitle: string;
@@ -52,43 +50,35 @@ export function yamlList(items: string[]): string {
     return '\n' + items.map(i => `  - ${i}`).join('\n');
 }
 
-export function renderBookNote(meta: BookMetadata): string {
+export function renderBookNote(meta: BookMetadata, template?: FolioTemplate | null): string {
     const now = new Date().toISOString().replace('T', ' ').slice(0, 19);
-    const year = new Date().getFullYear();
     const lines: string[] = [];
 
     lines.push('---');
     lines.push(`title: ${yamlValue(meta.title)}`);
     lines.push('type: book');
-    lines.push(meta.author.length ? `author: ${yamlList(meta.author)}` : 'author: ');
+    if (meta.subTitle) lines.push(`subTitle: ${yamlValue(meta.subTitle)}`);
+    if (meta.originalTitle) lines.push(`originalTitle: ${yamlValue(meta.originalTitle)}`);
     if (meta.series) lines.push(`series: ${yamlValue(meta.series)}`);
-    lines.push(`score: ${yamlValue(meta.score)}`);
-    lines.push(`datePublished: ${yamlValue(meta.datePublished)}`);
-    lines.push(`publisher: ${yamlValue(meta.publisher)}`);
+    lines.push(meta.author.length ? `author: ${yamlList(meta.author)}` : 'author: ');
     if (meta.translator.length) lines.push(`translator: ${yamlList(meta.translator)}`);
-    lines.push(`isbn: ${yamlValue(meta.isbn)}`);
+    if (meta.publisher) lines.push(`publisher: ${yamlValue(meta.publisher)}`);
+    if (meta.producer) lines.push(`producer: ${yamlValue(meta.producer)}`);
+    if (meta.isbn) lines.push(`isbn: ${yamlValue(meta.isbn)}`);
+    if (meta.score) lines.push(`score: ${yamlValue(meta.score)}`);
+    if (meta.datePublished) lines.push(`datePublished: ${yamlValue(meta.datePublished)}`);
     lines.push(`url: ${yamlValue(meta.url)}`);
     lines.push(`createTime: ${now}`);
-    lines.push('');
+    if (template?.tags?.length) lines.push(`tags: ${yamlList(template.tags)}`);
     lines.push('---');
     lines.push('');
-    lines.push('## 标签');
-    lines.push('');
-    lines.push(`#read/${year} #to-do`);
-    lines.push('');
-    lines.push('## 读后感');
-    lines.push('');
-    lines.push('');
-    lines.push('');
-    lines.push('## 摘录');
-    lines.push('');
+    if (template?.body) lines.push(template.body);
 
     return lines.join('\n') + '\n';
 }
 
-export function renderMovieNote(meta: MovieMetadata): string {
+export function renderMovieNote(meta: MovieMetadata, template?: FolioTemplate | null): string {
     const now = new Date().toISOString().replace('T', ' ').slice(0, 19);
-    const year = new Date().getFullYear();
     const lines: string[] = [];
 
     lines.push('---');
@@ -96,30 +86,19 @@ export function renderMovieNote(meta: MovieMetadata): string {
     lines.push(`type: ${meta.type}`);
     if (meta.originalTitle && meta.originalTitle !== meta.title)
         lines.push(`originalTitle: ${yamlValue(meta.originalTitle)}`);
-    lines.push(meta.genre.length ? `genre:${yamlList(meta.genre)}` : 'genre:');
-    lines.push(`datePublished: ${yamlValue(meta.datePublished)}`);
-    lines.push(meta.director.length ? `director:${yamlList(meta.director)}` : 'director:');
-    lines.push(`score: ${yamlValue(meta.score)}`);
-    lines.push(`url: ${yamlValue(meta.url)}`);
-    lines.push(meta.country.length ? `country:${yamlList(meta.country)}` : 'country:');
+    if (meta.genre.length) lines.push(`genre:${yamlList(meta.genre)}`);
+    if (meta.director.length) lines.push(`director:${yamlList(meta.director)}`);
+    if (meta.country.length) lines.push(`country:${yamlList(meta.country)}`);
     if (meta.IMDb) lines.push(`IMDb: ${yamlValue(meta.IMDb)}`);
-    lines.push(`time: ${yamlValue(meta.time)}`);
+    if (meta.time) lines.push(`time: ${yamlValue(meta.time)}`);
+    if (meta.score) lines.push(`score: ${yamlValue(meta.score)}`);
+    if (meta.datePublished) lines.push(`datePublished: ${yamlValue(meta.datePublished)}`);
+    lines.push(`url: ${yamlValue(meta.url)}`);
     lines.push(`createTime: ${now}`);
+    if (template?.tags?.length) lines.push(`tags: ${yamlList(template.tags)}`);
     lines.push('---');
     lines.push('');
-
-    const tags = [`#watch/${year}`];
-    meta.genre.forEach(g => tags.push(`#${g}`));
-    if (meta.type === 'teleplay') tags.push('#tv');
-    tags.push('#to-do');
-
-    lines.push('## 标签');
-    lines.push('');
-    lines.push(tags.join(' '));
-    lines.push('');
-    lines.push('## 观后感');
-    lines.push('');
-    lines.push('');
+    if (template?.body) lines.push(template.body);
 
     return lines.join('\n') + '\n';
 }

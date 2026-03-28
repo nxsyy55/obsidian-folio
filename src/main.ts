@@ -1,5 +1,5 @@
 import { Plugin, Notice, normalizePath } from 'obsidian';
-import { DoubanSettings, DEFAULT_SETTINGS, DoubanSettingTab } from './settings';
+import { DoubanSettings, DEFAULT_SETTINGS, DoubanSettingTab, FolioTemplate } from './settings';
 import { DoubanModal, DisambiguationModal } from './modal';
 import { searchDouban, searchByIsbn, fetchBookDetail, fetchMovieDetail } from './douban';
 import { renderBookNote, renderMovieNote } from './notes';
@@ -7,11 +7,18 @@ import { renderBookNote, renderMovieNote } from './notes';
 interface RunOptions {
     isbn?: string;
     id?: string;
+    category?: 'book' | 'movie';
     mediaType?: string;
+    template?: FolioTemplate | null;
 }
 
 function sanitizeFilename(name: string): string {
-    return name.replace(/[<>:"/\\|?*]/g, '').trim();
+    return name
+        .replace(/[<>:"/\\|?*]/g, '-')
+        .replace(/[\uff1a\uff0f\u300a\u300b\u3010\u3011\u300c\u300d\u300e\u300f\u3001\u3002\uff01\uff1f\uff08\uff09\u2014\u2026\u00b7]/g, '-')
+        .replace(/-{2,}/g, '-')
+        .replace(/^[-\s]+|[-\s]+$/g, '')
+        .trim();
 }
 
 export default class DoubanPlugin extends Plugin {
@@ -22,60 +29,32 @@ export default class DoubanPlugin extends Plugin {
         this.addSettingTab(new DoubanSettingTab(this.app, this));
 
         this.addCommand({
-            id: 'add-book',
-            name: 'Add Book Note',
-            callback: () => {
-                new DoubanModal(this.app, 'book', (_type, title) => {
-                    this.runBackend('book', title);
-                }).open();
-            },
-        });
-
-        this.addCommand({
-            id: 'add-movie',
-            name: 'Add Movie Note',
-            callback: () => {
-                new DoubanModal(this.app, 'movie', (type, title) => {
-                    this.runBackend('movie', title, type === 'teleplay' ? { mediaType: 'teleplay' } : {});
-                }).open();
-            },
-        });
-
-        this.addCommand({
             id: 'add-note',
-            name: 'Add Book or Movie Note',
+            name: 'Add Note',
             callback: () => {
-                new DoubanModal(this.app, 'both', (type, title) => {
-                    if (type === 'book') {
-                        this.runBackend('book', title);
+                new DoubanModal(this.app, this.settings.templates, (query, isbn, tplIndex) => {
+                    const template = tplIndex >= 0 ? this.settings.templates[tplIndex] : null;
+                    if (isbn) {
+                        this.runBackend('', { isbn, template });
                     } else {
-                        this.runBackend('movie', title, type === 'teleplay' ? { mediaType: 'teleplay' } : {});
+                        this.runBackend(query, { template });
                     }
-                }).open();
-            },
-        });
-
-        this.addCommand({
-            id: 'add-by-isbn',
-            name: 'Add Book Note by ISBN',
-            callback: () => {
-                new DoubanModal(this.app, 'isbn', (_type, isbn) => {
-                    this.runBackend('book', '', { isbn });
                 }).open();
             },
         });
     }
 
-    private async runBackend(type: 'book' | 'movie', title: string, options: RunOptions = {}): Promise<void> {
+    private async runBackend(title: string, options: RunOptions = {}): Promise<void> {
         const notice = new Notice('Fetching from Douban...', 0);
 
         try {
-            // ── Resolve candidate ──────────────────────────────────────────
             let candidateId: string;
-            let candidateType: string | undefined = options.mediaType;
+            let candidateCategory: 'book' | 'movie' = options.category ?? 'movie';
+            let candidateMediaType: string | undefined = options.mediaType;
 
             if (options.id) {
                 candidateId = options.id;
+                if (options.category) candidateCategory = options.category;
             } else if (options.isbn) {
                 const found = await searchByIsbn(options.isbn);
                 if (!found) {
@@ -84,10 +63,10 @@ export default class DoubanPlugin extends Plugin {
                     return;
                 }
                 candidateId = found.id;
+                candidateCategory = 'book';
                 if (!title) title = found.title;
             } else {
-                const mediaType = type === 'book' ? 'book' : (options.mediaType || undefined);
-                const results = await searchDouban(title, mediaType);
+                const results = await searchDouban(title);
                 if (!results.length) {
                     notice.hide();
                     new Notice(`No results found for "${title}"`, 6000);
@@ -95,44 +74,45 @@ export default class DoubanPlugin extends Plugin {
                 }
                 if (results.length === 1) {
                     candidateId = results[0].id;
-                    candidateType = results[0].type === 'teleplay' ? 'teleplay' : options.mediaType;
+                    candidateCategory = results[0].type === 'book' ? 'book' : 'movie';
+                    candidateMediaType = results[0].type === 'teleplay' ? 'teleplay' : undefined;
                 } else {
-                    // Multiple results: show disambiguation modal
                     notice.hide();
                     new DisambiguationModal(this.app, results, selected => {
-                        const resolvedType =
-                            selected.type === 'teleplay' ? 'teleplay' : options.mediaType;
-                        this.runBackend(type, title, { id: selected.id, mediaType: resolvedType });
+                        this.runBackend(title, {
+                            id: selected.id,
+                            category: selected.type === 'book' ? 'book' : 'movie',
+                            mediaType: selected.type === 'teleplay' ? 'teleplay' : undefined,
+                            template: options.template,
+                        });
                     }).open();
                     return;
                 }
             }
 
-            // ── Fetch detail + render ──────────────────────────────────────
             let content: string;
             let noteTitle: string;
 
-            if (type === 'book') {
+            if (candidateCategory === 'book') {
                 const meta = await fetchBookDetail(candidateId, this.settings, this.app.vault);
                 if (!meta) {
                     notice.hide();
                     new Notice('Failed to fetch book details. Check your Firecrawl key or network.', 8000);
                     return;
                 }
-                content = renderBookNote(meta);
+                content = renderBookNote(meta, options.template);
                 noteTitle = meta.title || title;
             } else {
-                const meta = await fetchMovieDetail(candidateId, candidateType, this.settings, this.app.vault);
+                const meta = await fetchMovieDetail(candidateId, candidateMediaType, this.settings, this.app.vault);
                 if (!meta) {
                     notice.hide();
                     new Notice('Failed to fetch movie details. Check your network.', 8000);
                     return;
                 }
-                content = renderMovieNote(meta);
+                content = renderMovieNote(meta, options.template);
                 noteTitle = meta.title || title;
             }
 
-            // ── Write note ────────────────────────────────────────────────
             const filename = sanitizeFilename(noteTitle) + '.md';
             const filePath = normalizePath(`${this.settings.inboxDir}/${filename}`);
 

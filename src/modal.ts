@@ -1,7 +1,5 @@
 import { App, Modal } from 'obsidian';
-
-export type ModalMode = 'book' | 'movie' | 'isbn' | 'both';
-export type SubmitType = 'book' | 'movie' | 'teleplay' | 'isbn';
+import type { FolioTemplate } from './settings';
 
 export interface Candidate {
     id: string;
@@ -12,73 +10,82 @@ export interface Candidate {
 }
 
 export class DoubanModal extends Modal {
-    private mode: ModalMode;
-    private onSubmit: (type: SubmitType, value: string) => void;
-    private inputEl: HTMLInputElement;
+    private templates: FolioTemplate[];
+    private onSubmit: (query: string, isbn: string, templateIndex: number) => void;
 
-    constructor(app: App, mode: ModalMode, onSubmit: (type: SubmitType, value: string) => void) {
+    constructor(
+        app: App,
+        templates: FolioTemplate[],
+        onSubmit: (query: string, isbn: string, templateIndex: number) => void
+    ) {
         super(app);
-        this.mode = mode;
+        this.templates = templates;
         this.onSubmit = onSubmit;
     }
 
     onOpen(): void {
         const { contentEl } = this;
         contentEl.empty();
+        this.titleEl.setText('Folio: Add Note');
 
-        const isISBN = this.mode === 'isbn';
-        this.titleEl.setText(isISBN ? 'Douban: Search by ISBN' : 'Douban: Add Note');
+        const fieldStyle = (el: HTMLElement) => {
+            el.style.width = '100%';
+            el.style.marginBottom = '0.75em';
+            el.style.boxSizing = 'border-box';
+        };
 
-        this.inputEl = contentEl.createEl('input', {
+        const makeLabel = (text: string) => {
+            const lbl = contentEl.createEl('label', { text });
+            lbl.style.display = 'block';
+            lbl.style.fontSize = '0.85em';
+            lbl.style.marginBottom = '3px';
+            lbl.style.color = 'var(--text-muted)';
+        };
+
+        makeLabel('Search');
+        const searchEl = contentEl.createEl('input', {
             type: 'text',
-            placeholder: isISBN ? 'Enter ISBN...' : 'Enter title...',
+            placeholder: 'Title, author, or keyword...',
         });
-        this.inputEl.style.width = '100%';
-        this.inputEl.style.marginBottom = '1em';
+        fieldStyle(searchEl);
 
-        const defaultType: SubmitType = isISBN ? 'isbn' : this.mode === 'movie' ? 'movie' : 'book';
-
-        this.inputEl.addEventListener('keydown', (event: KeyboardEvent) => {
-            if (event.key === 'Enter') {
-                const value = this.inputEl.value.trim();
-                if (value) {
-                    this.close();
-                    this.onSubmit(defaultType, value);
-                }
-            }
+        makeLabel('ISBN (books only)');
+        const isbnEl = contentEl.createEl('input', {
+            type: 'text',
+            placeholder: 'e.g. 9787302423287',
         });
+        fieldStyle(isbnEl);
+
+        makeLabel('Template');
+        const tplSelect = contentEl.createEl('select');
+        fieldStyle(tplSelect);
+        tplSelect.createEl('option', { text: '— None —', value: '' });
+        this.templates.forEach((tpl, i) => {
+            tplSelect.createEl('option', { text: tpl.name, value: String(i) });
+        });
+
+        const doSubmit = () => {
+            const query = searchEl.value.trim();
+            const isbn = isbnEl.value.trim();
+            if (!query && !isbn) return;
+            const tplIndex = tplSelect.value !== '' ? parseInt(tplSelect.value, 10) : -1;
+            this.close();
+            this.onSubmit(query, isbn, tplIndex);
+        };
+
+        searchEl.addEventListener('keydown', (e: KeyboardEvent) => { if (e.key === 'Enter') doSubmit(); });
+        isbnEl.addEventListener('keydown', (e: KeyboardEvent) => { if (e.key === 'Enter') doSubmit(); });
 
         const buttonRow = contentEl.createDiv({ cls: 'modal-button-container' });
         buttonRow.style.display = 'flex';
-        buttonRow.style.gap = '0.5em';
         buttonRow.style.justifyContent = 'flex-end';
+        buttonRow.style.marginTop = '0.5em';
 
-        const addButton = (label: string, type: SubmitType) => {
-            const btn = buttonRow.createEl('button', { text: label });
-            btn.addEventListener('click', () => {
-                const value = this.inputEl.value.trim();
-                if (value) {
-                    this.close();
-                    this.onSubmit(type, value);
-                }
-            });
-        };
+        const addBtn = buttonRow.createEl('button', { text: 'Add' });
+        addBtn.addClass('mod-cta');
+        addBtn.addEventListener('click', doSubmit);
 
-        if (isISBN) {
-            addButton('Search', 'isbn');
-        } else if (this.mode === 'book') {
-            addButton('Book', 'book');
-        } else if (this.mode === 'movie') {
-            addButton('Movie', 'movie');
-            addButton('Teleplay', 'teleplay');
-        } else {
-            // 'both'
-            addButton('Book', 'book');
-            addButton('Movie', 'movie');
-            addButton('Teleplay', 'teleplay');
-        }
-
-        this.inputEl.focus();
+        searchEl.focus();
     }
 
     onClose(): void {
@@ -99,7 +106,7 @@ export class DisambiguationModal extends Modal {
     onOpen(): void {
         const { contentEl } = this;
         contentEl.empty();
-        this.titleEl.setText('Douban: Select Result');
+        this.titleEl.setText('Folio: Select Result');
 
         this.candidates.forEach((candidate) => {
             const row = contentEl.createDiv();
@@ -115,12 +122,8 @@ export class DisambiguationModal extends Modal {
             ].join('');
             row.setText(label);
 
-            row.addEventListener('mouseenter', () => {
-                row.style.background = 'var(--background-modifier-hover)';
-            });
-            row.addEventListener('mouseleave', () => {
-                row.style.background = '';
-            });
+            row.addEventListener('mouseenter', () => { row.style.background = 'var(--background-modifier-hover)'; });
+            row.addEventListener('mouseleave', () => { row.style.background = ''; });
             row.addEventListener('click', () => {
                 this.close();
                 this.onSelect(candidate);

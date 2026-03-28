@@ -32,8 +32,6 @@ const BOOK_SCHEMA = {
         publisher: { type: 'string', description: 'The publisher' },
         producer: { type: 'string', description: 'The producer/publishing house' },
         isbn: { type: 'string', description: 'The ISBN-10 or ISBN-13' },
-        totalPage: { type: 'string', description: 'Total number of pages' },
-        price: { type: 'string', description: 'The price of the book' },
     },
     required: ['title'],
 };
@@ -244,7 +242,6 @@ function parseBookHtml(html: string, id: string, url: string): BookMetadata {
     const doc = new DOMParser().parseFromString(html, 'text/html');
     const infoEl = doc.querySelector('#info');
     return {
-        doubanId: id,
         type: 'book',
         title: doc.querySelector('h1 span')?.textContent?.trim() ?? '',
         subTitle: getInfoText(infoEl, '副标题:'),
@@ -257,15 +254,12 @@ function parseBookHtml(html: string, id: string, url: string): BookMetadata {
         publisher: getInfoText(infoEl, '出版社:'),
         producer: getInfoText(infoEl, '出品方:'),
         isbn: getInfoText(infoEl, 'ISBN:'),
-        totalPage: getInfoText(infoEl, '页数:'),
-        price: getInfoText(infoEl, '定价:'),
         url,
     };
 }
 
 function mapBookExtract(extract: Record<string, unknown>, id: string, url: string): BookMetadata {
     return {
-        doubanId: id,
         type: 'book',
         title: String(extract.title ?? ''),
         subTitle: String(extract.subTitle ?? ''),
@@ -278,8 +272,6 @@ function mapBookExtract(extract: Record<string, unknown>, id: string, url: strin
         publisher: String(extract.publisher ?? ''),
         producer: String(extract.producer ?? ''),
         isbn: String(extract.isbn ?? ''),
-        totalPage: String(extract.totalPage ?? ''),
-        price: String(extract.price ?? ''),
         url,
     };
 }
@@ -363,7 +355,6 @@ export async function fetchMovieDetail(
             const [title, originalTitle] = splitTitleOriginal(String(data.title ?? ''));
             const isTV = data.is_tv || data.episodes_count;
             result = {
-                doubanId: id,
                 title,
                 type: isTV ? 'teleplay' : 'movie',
                 originalTitle,
