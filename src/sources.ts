@@ -11,7 +11,7 @@ const DEFAULT_UA =
 // ── Language detection ─────────────────────────────────────────────────────
 
 export function detectLanguage(query: string): 'cjk' | 'latin' {
-    return /[\u4e00-\u9fff\u3000-\u303f\uff00-\uffef]/.test(query) ? 'cjk' : 'latin';
+    return /[\u4e00-\u9fff\u3000-\u303f\uff00-\uffef\u3040-\u309f\u30a0-\u30bf]/.test(query) ? 'cjk' : 'latin';
 }
 
 // ── Google Books ───────────────────────────────────────────────────────────
@@ -270,4 +270,79 @@ export async function fetchOpenLibraryDetail(id: string, vault: Vault): Promise<
     } catch {
         return null;
     }
+}
+
+// ── ISBN search ────────────────────────────────────────────────────────────
+
+async function searchOpenLibraryByIsbn(isbn: string): Promise<Candidate | null> {
+    try {
+        const resp = await requestUrl({
+            url: `https://openlibrary.org/search.json?isbn=${encodeURIComponent(isbn)}&fields=key,title,author_name,first_publish_year&limit=1`,
+            headers: { 'User-Agent': DEFAULT_UA },
+            throw: false,
+        });
+        if (resp.status !== 200) return null;
+        const doc = (resp.json?.docs as Record<string, unknown>[])?.[0];
+        if (!doc) return null;
+        const key = String(doc.key ?? '');
+        const id = key.replace('/works/', '');
+        if (!id) return null;
+        const authors = (doc.author_name as string[]) ?? [];
+        return {
+            id,
+            title: String(doc.title ?? ''),
+            sub_title: authors.join(', '),
+            type: 'book',
+            year: String(doc.first_publish_year ?? ''),
+            source: 'openlibrary',
+        };
+    } catch {
+        return null;
+    }
+}
+
+async function searchGoogleBooksByIsbn(isbn: string): Promise<Candidate | null> {
+    try {
+        const resp = await requestUrl({
+            url: `https://www.googleapis.com/books/v1/volumes?q=isbn:${encodeURIComponent(isbn)}&maxResults=1`,
+            headers: { 'User-Agent': DEFAULT_UA },
+            throw: false,
+        });
+        if (resp.status !== 200) return null;
+        const item = (resp.json?.items as Record<string, unknown>[])?.[0];
+        if (!item) return null;
+        const info = (item.volumeInfo as Record<string, unknown>) ?? {};
+        const authors = (info.authors as string[]) ?? [];
+        return {
+            id: String(item.id ?? ''),
+            title: String(info.title ?? ''),
+            sub_title: authors.join(', '),
+            type: 'book',
+            year: String(info.publishedDate ?? '').slice(0, 4),
+            source: 'googlebooks',
+        };
+    } catch {
+        return null;
+    }
+}
+
+export async function searchByIsbnAll(isbn: string): Promise<Candidate | null> {
+    const [douban, ol, gb] = await Promise.all([
+        searchByIsbn(isbn),
+        searchOpenLibraryByIsbn(isbn),
+        searchGoogleBooksByIsbn(isbn),
+    ]);
+    return douban ?? ol ?? gb ?? null;
+}
+
+// ── Routing ────────────────────────────────────────────────────────────────
+
+export async function searchAll(query: string): Promise<Candidate[]> {
+    const lang = detectLanguage(query);
+    const searches: Promise<Candidate[]>[] =
+        lang === 'cjk'
+            ? [searchDouban(query), searchGoogleBooks(query)]
+            : [searchIMDB(query), searchOpenLibrary(query)];
+    const results = await Promise.all(searches);
+    return results.flat();
 }
