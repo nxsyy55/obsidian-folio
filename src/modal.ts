@@ -7,6 +7,7 @@ export interface Candidate {
     sub_title: string;
     type: string;
     year: string;
+    source: 'douban' | 'imdb' | 'openlibrary' | 'googlebooks';
 }
 
 export class DoubanModal extends Modal {
@@ -115,10 +116,16 @@ export class DisambiguationModal extends Modal {
             row.style.borderBottom = '1px solid var(--background-modifier-border)';
             row.style.borderRadius = '4px';
 
+            const sourceLabel: Record<string, string> = {
+                douban: 'Douban',
+                imdb: 'IMDB',
+                openlibrary: 'Open Library',
+                googlebooks: 'Google Books',
+            };
             const label = [
                 candidate.title,
                 candidate.sub_title ? ` / ${candidate.sub_title}` : '',
-                ` (${candidate.type}${candidate.year ? ', ' + candidate.year : ''})`,
+                ` (${candidate.type}${candidate.year ? ', ' + candidate.year : ''}, ${sourceLabel[candidate.source] ?? candidate.source})`,
             ].join('');
             row.setText(label);
 

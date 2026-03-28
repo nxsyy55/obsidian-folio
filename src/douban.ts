@@ -202,6 +202,7 @@ export async function searchDouban(query: string, mediaType?: string): Promise<C
                     sub_title: String(item.sub_title ?? item.author_name ?? ''),
                     type: itemType,
                     year: String(item.year ?? ''),
+                    source: 'douban',
                 });
             }
         } catch {
@@ -230,7 +231,7 @@ export async function searchByIsbn(isbn: string): Promise<Candidate | null> {
         if (!idMatch) return null;
 
         const title = doc.querySelector('h1 span')?.textContent?.trim() ?? '';
-        return { id: idMatch[1], title, sub_title: '', type: 'book', year: '' };
+        return { id: idMatch[1], title, sub_title: '', type: 'book', year: '', source: 'douban' };
     } catch {
         return null;
     }
