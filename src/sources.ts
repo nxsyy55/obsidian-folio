@@ -83,3 +83,101 @@ export async function fetchGoogleBooksDetail(id: string, vault: Vault): Promise<
         return null;
     }
 }
+
+// ── IMDB ───────────────────────────────────────────────────────────────────
+
+function imdbQidToType(qid: string): string {
+    return qid === 'tvSeries' || qid === 'tvMiniSeries' ? 'teleplay' : 'movie';
+}
+
+function parseIso8601Duration(duration: string): string {
+    // "PT2H46M" → "2h 46min", "PT90M" → "90min"
+    const h = duration.match(/(\d+)H/)?.[1];
+    const m = duration.match(/(\d+)M/)?.[1];
+    if (h && m) return `${h}h ${m}min`;
+    if (h) return `${h}h`;
+    if (m) return `${m}min`;
+    return duration;
+}
+
+export async function searchIMDB(query: string): Promise<Candidate[]> {
+    try {
+        const firstChar = encodeURIComponent(query.trim()[0]?.toLowerCase() ?? 'x');
+        const resp = await requestUrl({
+            url: `https://v3.sg.media-imdb.com/suggestion/${firstChar}/${encodeURIComponent(query)}.json`,
+            headers: { 'User-Agent': DEFAULT_UA },
+            throw: false,
+        });
+        if (resp.status !== 200) return [];
+        const items = (resp.json?.d as Record<string, unknown>[]) ?? [];
+        return items
+            .filter(item => ['movie', 'tvSeries', 'tvMiniSeries'].includes(String(item.qid ?? '')))
+            .map(item => ({
+                id: String(item.id ?? ''),
+                title: String(item.l ?? ''),
+                sub_title: String(item.s ?? ''),
+                type: imdbQidToType(String(item.qid ?? '')),
+                year: String(item.y ?? ''),
+                source: 'imdb' as const,
+            }));
+    } catch {
+        return [];
+    }
+}
+
+export async function fetchIMDBDetail(id: string, vault: Vault): Promise<MovieMetadata | null> {
+    const cache = await loadCache(vault);
+    const cacheKey = `imdb_${id}`;
+    if (cache[cacheKey]) return cache[cacheKey] as MovieMetadata;
+
+    try {
+        const resp = await requestUrl({
+            url: `https://www.imdb.com/title/${id}/`,
+            headers: { 'User-Agent': DEFAULT_UA, 'Accept-Language': 'en-US,en;q=0.9' },
+            throw: false,
+        });
+        if (resp.status !== 200) return null;
+
+        const doc = new DOMParser().parseFromString(resp.text, 'text/html');
+        const ldScript = doc.querySelector('script[type="application/ld+json"]');
+        if (!ldScript?.textContent) return null;
+
+        const ld = JSON.parse(ldScript.textContent) as Record<string, unknown>;
+
+        const ldType = String(ld['@type'] ?? '');
+        const type: 'movie' | 'teleplay' =
+            ldType === 'TVSeries' || ldType === 'TVMiniSeries' ? 'teleplay' : 'movie';
+
+        const rawDirector = ld.director;
+        const directors: string[] = Array.isArray(rawDirector)
+            ? (rawDirector as Record<string, unknown>[]).map(d => String(d.name ?? ''))
+            : rawDirector
+            ? [String((rawDirector as Record<string, unknown>).name ?? '')]
+            : [];
+
+        const rawCountry = ld.countryOfOrigin;
+        const countries: string[] = Array.isArray(rawCountry)
+            ? (rawCountry as Record<string, unknown>[]).map(c => String(c.name ?? ''))
+            : [];
+
+        const result: MovieMetadata = {
+            title: String(ld.name ?? ''),
+            type,
+            originalTitle: '',
+            genre: (ld.genre as string[]) ?? [],
+            datePublished: String(ld.datePublished ?? ''),
+            director: directors,
+            score: String((ld.aggregateRating as Record<string, unknown>)?.ratingValue ?? ''),
+            url: `https://www.imdb.com/title/${id}/`,
+            country: countries,
+            IMDb: id,
+            time: ld.duration ? parseIso8601Duration(String(ld.duration)) : '',
+        };
+
+        cache[cacheKey] = result;
+        await saveCache(vault, cache);
+        return result;
+    } catch {
+        return null;
+    }
+}
