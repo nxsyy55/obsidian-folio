@@ -102,3 +102,20 @@ export function renderMovieNote(meta: MovieMetadata, template?: FolioTemplate | 
 
     return lines.join('\n') + '\n';
 }
+
+export function renderBlankNote(
+    title: string,
+    type: 'book' | 'movie',
+    template?: FolioTemplate | null
+): string {
+    const now = new Date().toISOString().replace('T', ' ').slice(0, 19);
+    const lines: string[] = [];
+    lines.push('---');
+    lines.push(`title: ${yamlValue(title)}`);
+    lines.push(`type: ${type}`);
+    lines.push(`createTime: ${now}`);
+    lines.push('---');
+    lines.push('');
+    if (template?.body) lines.push(template.body);
+    return lines.join('\n') + '\n';
+}

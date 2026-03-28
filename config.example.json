@@ -1,8 +1,0 @@
-{
-  "book_dir": "ReadNotes",
-  "watch_dir": "WatchNotes",
-  "inbox_dir": "inbox",
-  "cache_file": "cache.json",
-  "vault_name": "My Notes",
-  "request_delay": 2
-}

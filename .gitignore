@@ -15,14 +15,9 @@ main.js
 # Node
 node_modules/
 
-# Python
-backend/__pycache__/
-backend/.venv/
+# Python (legacy, kept in case of temporary files)
 __pycache__/
 *.py[oc]
 .venv/
 .pytest_cache/
-build/
-dist/
-wheels/
-*.egg-info
+esbuild.config.mjs

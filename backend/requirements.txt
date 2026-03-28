@@ -1,5 +1,0 @@
-requests
-beautifulsoup4
-thefuzz
-firecrawl-py
-python-dotenv

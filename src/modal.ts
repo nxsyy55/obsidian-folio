@@ -7,6 +7,7 @@ export interface Candidate {
     sub_title: string;
     type: string;
     year: string;
+    source: 'douban' | 'imdb' | 'openlibrary' | 'googlebooks';
 }
 
 export class DoubanModal extends Modal {
@@ -108,6 +109,13 @@ export class DisambiguationModal extends Modal {
         contentEl.empty();
         this.titleEl.setText('Folio: Select Result');
 
+        const sourceLabel: Record<string, string> = {
+            douban: 'Douban',
+            imdb: 'IMDB',
+            openlibrary: 'Open Library',
+            googlebooks: 'Google Books',
+        };
+
         this.candidates.forEach((candidate) => {
             const row = contentEl.createDiv();
             row.style.padding = '0.5em 0.75em';
@@ -118,7 +126,7 @@ export class DisambiguationModal extends Modal {
             const label = [
                 candidate.title,
                 candidate.sub_title ? ` / ${candidate.sub_title}` : '',
-                ` (${candidate.type}${candidate.year ? ', ' + candidate.year : ''})`,
+                ` (${candidate.type}${candidate.year ? ', ' + candidate.year : ''}, ${sourceLabel[candidate.source] ?? candidate.source})`,
             ].join('');
             row.setText(label);
 
@@ -129,6 +137,46 @@ export class DisambiguationModal extends Modal {
                 this.onSelect(candidate);
             });
         });
+    }
+
+    onClose(): void {
+        this.contentEl.empty();
+    }
+}
+
+export class BlankNoteModal extends Modal {
+    private title: string;
+    private onSelect: (type: 'book' | 'movie') => void;
+
+    constructor(app: App, title: string, onSelect: (type: 'book' | 'movie') => void) {
+        super(app);
+        this.title = title;
+        this.onSelect = onSelect;
+    }
+
+    onOpen(): void {
+        const { contentEl } = this;
+        contentEl.empty();
+        this.titleEl.setText('Folio: No Results Found');
+
+        const msg = contentEl.createEl('p', {
+            text: `No results for "${this.title}". Create a blank note as:`,
+        });
+        msg.style.marginBottom = '1em';
+
+        const buttonRow = contentEl.createDiv();
+        buttonRow.style.display = 'flex';
+        buttonRow.style.gap = '8px';
+
+        const bookBtn = buttonRow.createEl('button', { text: 'Book' });
+        bookBtn.addClass('mod-cta');
+        bookBtn.addEventListener('click', () => { this.close(); this.onSelect('book'); });
+
+        const movieBtn = buttonRow.createEl('button', { text: 'Movie' });
+        movieBtn.addEventListener('click', () => { this.close(); this.onSelect('movie'); });
+
+        const cancelBtn = buttonRow.createEl('button', { text: 'Cancel' });
+        cancelBtn.addEventListener('click', () => this.close());
     }
 
     onClose(): void {

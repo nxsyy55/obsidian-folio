@@ -1,11 +1,11 @@
 {
-  "name": "douban-obsidian",
-  "version": "0.1.0",
-  "description": "Create Obsidian notes for books and movies from Douban",
+  "name": "folio",
+  "version": "0.98.0",
+  "description": "Create Obsidian notes for books and movies — Douban, IMDB, Open Library, Google Books",
   "main": "main.js",
   "scripts": {
-    "dev": "node esbuild.config.mjs",
-    "build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
+    "dev": "node build/esbuild.config.mjs",
+    "build": "tsc -noEmit -skipLibCheck && node build/esbuild.config.mjs production",
     "deploy": "npm run build && node -e \"const fs=require('fs'); const dest='../.obsidian/plugins/douban-obsidian/'; ['main.js','manifest.json','styles.css'].forEach(f=>{ if(fs.existsSync(f)) fs.copyFileSync(f, dest+f); });\""
   },
   "keywords": [],
