@@ -1,13 +1,11 @@
-# douban-obsidian
+# Folio
 
-An Obsidian plugin that creates notes from Douban metadata for books and movies.
+An Obsidian plugin that creates notes for books and movies from multiple sources.
 
 ## Prerequisites
 
-- **Obsidian desktop** (the plugin is desktop-only)
-- **Firecrawl API key** — free tier at https://www.firecrawl.dev/ (used to fetch book/movie detail pages)
-
-No Python required.
+- **Obsidian desktop** (desktop-only plugin)
+- **Firecrawl API key** — optional, free tier at https://www.firecrawl.dev/. Only needed for Douban book and movie detail fetches. English sources (IMDB, Open Library, Google Books) work without it.
 
 ## Setup
 
@@ -34,100 +32,91 @@ manifest.json
 styles.css
 ```
 
-Then in Obsidian: **Settings → Community Plugins → reload**, find **Douban Notes**, and enable it.
+Then in Obsidian: **Settings → Community Plugins → reload**, find **Folio**, and enable it.
 
-### 2. Configure the plugin
+### 2. Configure
 
-After enabling, go to **Settings → Douban Notes**:
+After enabling, go to **Settings → Folio**:
 
 | Setting | What to enter |
-|---------|---------------|
-| **Firecrawl API key** | From https://www.firecrawl.dev/app/api-keys |
+|---|---|
+| **Firecrawl API key** | Optional. From https://www.firecrawl.dev/app/api-keys. Only used for Douban fetches. |
 | **Inbox folder** | Vault subfolder for new notes (default: `inbox`) |
-| **Request delay** | Seconds between requests (default: 2) |
+| **Request delay** | Seconds between Douban requests (default: 2) |
 
 > Make sure the inbox folder exists in your vault before running.
 
 ## Usage
 
-Open the Command Palette (`Ctrl+P`) and search for **Douban**:
+Open the Command Palette (`Ctrl+P`) and run **Folio: Add Note**.
 
-| Command | What it does |
-|---------|-------------|
-| **Douban Notes: Add Book Note** | Search by title, pick result, create note |
-| **Douban Notes: Add Movie Note** | Search by title with movie/teleplay toggle |
-| **Douban Notes: Add Book or Movie Note** | Combined search — choose type in the modal |
-| **Douban Notes: Add Book Note by ISBN** | Paste an ISBN for exact lookup |
+The modal has three fields:
+- **Search** — title, author, or keyword
+- **ISBN** — for exact book lookup (bypasses title search)
+- **Template** — optional note template
 
-Notes are created in your configured inbox folder. Review and move them to their final location.
+Sources are selected automatically by query language:
+
+| Query type | Sources searched |
+|---|---|
+| Chinese / Japanese (CJK characters) | Douban + Google Books |
+| English / Latin | IMDB + Open Library |
+| ISBN | Douban + Open Library + Google Books (parallel, first hit wins) |
+
+If multiple results are found, a disambiguation list lets you pick the right one. If no results are found at all, a blank note is created with `title`, `type`, and `createTime` for you to fill in.
+
+Notes land in your configured inbox folder. Move them to their final location after reviewing.
 
 ## Project Structure
 
 ```
-douban-obsidian/
-├── .github/workflows/release.yml  # Auto-publish on git tag
-├── src/                           # Obsidian plugin TypeScript
-│   ├── main.ts                    # Plugin entry point
-│   ├── settings.ts                # Settings tab
-│   ├── modal.ts                   # Search + disambiguation modals
-│   ├── douban.ts                  # Douban API + Firecrawl fetching
-│   ├── notes.ts                   # Markdown note renderers
-│   └── cache.ts                   # Vault-backed metadata cache
-├── backend/                       # Standalone Python CLI (power users)
-│   ├── vault_tool.py              # CLI entry point
-│   ├── douban.py                  # Douban search + scraping
-│   ├── notes.py                   # Markdown note generation
-│   ├── pyproject.toml
-│   └── uv.lock
-├── manifest.json                  # Obsidian plugin manifest
-├── package.json                   # Plugin build deps (esbuild, TypeScript)
-├── tsconfig.json
-└── esbuild.config.mjs
+├── src/
+│   ├── main.ts        Plugin entry point, command registration
+│   ├── settings.ts    Settings tab
+│   ├── modal.ts       Search, disambiguation, and blank-note modals
+│   ├── douban.ts      Douban search + Firecrawl detail fetch
+│   ├── sources.ts     IMDB, Open Library, Google Books + language routing
+│   ├── notes.ts       Note renderers (book, movie, blank)
+│   └── cache.ts       Vault-backed metadata cache
+├── build/
+│   └── esbuild.config.mjs
+├── manifest.json
+├── styles.css
+└── package.json
 ```
 
 ## Architecture
 
 ```
-Plugin (main.ts)
-  ├── modal.ts: search input → disambiguation list
-  ├── douban.ts: Douban JSON APIs + Firecrawl detail fetch → cache
-  └── notes.ts: render frontmatter + body → vault.create()
+User submits query
+  ├── ISBN → searchByIsbnAll (Douban + Open Library + Google Books, parallel)
+  └── Title
+        ├── CJK   → Douban + Google Books (parallel)
+        └── Latin → IMDB + Open Library (parallel)
+              ├── 1 result  → fetch detail → create note
+              ├── 2+ results → DisambiguationModal → fetch detail → create note
+              └── 0 results → BlankNoteModal → create minimal note
 ```
 
 | Module | Responsibility |
-|--------|---------------|
-| `main.ts` | Command registration, orchestration |
-| `settings.ts` | Firecrawl key, inbox dir, request delay |
-| `modal.ts` | Search input and result disambiguation UI |
-| `douban.ts` | Douban search/ISBN APIs, Firecrawl scraping |
-| `notes.ts` | YAML frontmatter, markdown body rendering |
+|---|---|
+| `main.ts` | Command wiring, orchestration |
+| `settings.ts` | Firecrawl key, inbox dir, request delay, templates |
+| `modal.ts` | Search input, disambiguation list, blank note type picker |
+| `douban.ts` | Douban search/ISBN APIs, Firecrawl book/movie detail |
+| `sources.ts` | Language detection, IMDB/Open Library/Google Books search + detail |
+| `notes.ts` | Render book, movie, and blank note markdown |
 | `cache.ts` | JSON cache via vault adapter |
+
+**Cache keys:** `book_<id>`, `movie_<id>` (Douban), `gb_<id>` (Google Books), `imdb_<id>`, `ol_<id>`. Delete `.obsidian/plugins/douban-obsidian/cache.json` entries to force a re-fetch.
 
 ## Troubleshooting
 
-**Movie IMDb field empty:** Firecrawl scraping failed. Check your Firecrawl API key in Settings → Douban Notes.
-
-**Stale or wrong metadata:** Delete the relevant entry from `.obsidian/plugins/douban-obsidian/cache.json` and re-run the command. Keys are `book_<id>` and `movie_<id>`.
-
-**Inbox folder missing:** Create the folder in your vault first, then retry.
-
-**"No results found" for a valid title:** Try the original Chinese title, or use ISBN lookup for books. Douban's suggest API is sensitive to exact spelling.
-
-**Note not opening after creation:** The note is created in your inbox folder — open it manually from the file explorer if the automatic open fails.
-
-## Standalone Python CLI
-
-The `backend/` directory contains a standalone Python CLI for power users who prefer the terminal:
-
-```bash
-cd backend
-pip install requests beautifulsoup4 thefuzz firecrawl-py python-dotenv
-# or: uv sync
-
-python vault_tool.py book "百年孤独"
-python vault_tool.py book --isbn 9787544253994
-python vault_tool.py movie "盗梦空间"
-python vault_tool.py movie "3年A班" --type teleplay
-```
-
-See `backend/` for configuration details. The plugin does not depend on this CLI.
+| Problem | Fix |
+|---|---|
+| Douban fetch fails or fields are empty | Check Firecrawl API key in Settings → Folio |
+| Wrong or stale metadata | Delete the cache entry for that ID and re-run |
+| Inbox folder missing | Create the folder in your vault first |
+| No results for a title | Try the original-language title, or use ISBN for books |
+| Note not opening after creation | Find it manually in your inbox folder |
+| Wrong film picked from IMDB | Multiple results shown — pick the correct one from the list |
