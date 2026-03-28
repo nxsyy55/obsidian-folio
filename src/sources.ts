@@ -183,3 +183,87 @@ export async function fetchIMDBDetail(id: string, vault: Vault): Promise<MovieMe
         return null;
     }
 }
+
+// ── Open Library ───────────────────────────────────────────────────────────
+
+export async function searchOpenLibrary(query: string): Promise<Candidate[]> {
+    try {
+        const resp = await requestUrl({
+            url: `https://openlibrary.org/search.json?q=${encodeURIComponent(query)}&fields=key,title,author_name,first_publish_year&limit=10`,
+            headers: { 'User-Agent': DEFAULT_UA },
+            throw: false,
+        });
+        if (resp.status !== 200) return [];
+        const docs = (resp.json?.docs as Record<string, unknown>[]) ?? [];
+        return docs.map(doc => {
+            const key = String(doc.key ?? '');          // "/works/OL45804W"
+            const id = key.replace('/works/', '');
+            const authors = (doc.author_name as string[]) ?? [];
+            return {
+                id,
+                title: String(doc.title ?? ''),
+                sub_title: authors.join(', '),
+                type: 'book',
+                year: String(doc.first_publish_year ?? ''),
+                source: 'openlibrary' as const,
+            };
+        });
+    } catch {
+        return [];
+    }
+}
+
+export async function fetchOpenLibraryDetail(id: string, vault: Vault): Promise<BookMetadata | null> {
+    const cache = await loadCache(vault);
+    const cacheKey = `ol_${id}`;
+    if (cache[cacheKey]) return cache[cacheKey] as BookMetadata;
+
+    try {
+        const resp = await requestUrl({
+            url: `https://openlibrary.org/works/${id}.json`,
+            headers: { 'User-Agent': DEFAULT_UA },
+            throw: false,
+        });
+        if (resp.status !== 200) return null;
+        const work = resp.json as Record<string, unknown>;
+
+        // Fetch author names in parallel (each entry is { author: { key: "/authors/OL26320A" } })
+        const authorEntries = (work.authors as { author: { key: string } }[]) ?? [];
+        const authorNames = await Promise.all(
+            authorEntries.map(async entry => {
+                try {
+                    const ar = await requestUrl({
+                        url: `https://openlibrary.org${entry.author.key}.json`,
+                        headers: { 'User-Agent': DEFAULT_UA },
+                        throw: false,
+                    });
+                    return ar.status === 200 ? String(ar.json?.name ?? '') : '';
+                } catch {
+                    return '';
+                }
+            })
+        );
+
+        const result: BookMetadata = {
+            type: 'book',
+            title: String(work.title ?? ''),
+            subTitle: '',
+            originalTitle: '',
+            series: '',
+            author: authorNames.filter(Boolean),
+            score: '',
+            datePublished: String(work.first_publish_date ?? '').slice(0, 10),
+            translator: [],
+            publisher: '',
+            producer: '',
+            isbn: '',
+            url: `https://openlibrary.org/works/${id}`,
+        };
+
+        cache[cacheKey] = result;
+        await saveCache(vault, cache);
+        return result;
+    } catch {
+        return null;
+    }
+}
