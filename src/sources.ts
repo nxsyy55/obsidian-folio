@@ -294,7 +294,7 @@ async function searchOpenLibraryByIsbn(isbn: string): Promise<Candidate | null> 
             sub_title: authors.join(', '),
             type: 'book',
             year: String(doc.first_publish_year ?? ''),
-            source: 'openlibrary',
+            source: 'openlibrary' as const,
         };
     } catch {
         return null;
@@ -319,7 +319,7 @@ async function searchGoogleBooksByIsbn(isbn: string): Promise<Candidate | null> 
             sub_title: authors.join(', '),
             type: 'book',
             year: String(info.publishedDate ?? '').slice(0, 4),
-            source: 'googlebooks',
+            source: 'googlebooks' as const,
         };
     } catch {
         return null;
