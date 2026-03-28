@@ -73,12 +73,7 @@ douban-obsidian/
 │   ├── douban.ts                  # Douban API + Firecrawl fetching
 │   ├── notes.ts                   # Markdown note renderers
 │   └── cache.ts                   # Vault-backed metadata cache
-├── backend/                       # Standalone Python CLI (power users)
-│   ├── vault_tool.py              # CLI entry point
-│   ├── douban.py                  # Douban search + scraping
-│   ├── notes.py                   # Markdown note generation
-│   ├── pyproject.toml
-│   └── uv.lock
+│   └── cache.ts                   # Vault-backed metadata cache
 ├── manifest.json                  # Obsidian plugin manifest
 ├── package.json                   # Plugin build deps (esbuild, TypeScript)
 ├── tsconfig.json
@@ -115,19 +110,3 @@ Plugin (main.ts)
 
 **Note not opening after creation:** The note is created in your inbox folder — open it manually from the file explorer if the automatic open fails.
 
-## Standalone Python CLI
-
-The `backend/` directory contains a standalone Python CLI for power users who prefer the terminal:
-
-```bash
-cd backend
-pip install requests beautifulsoup4 thefuzz firecrawl-py python-dotenv
-# or: uv sync
-
-python vault_tool.py book "百年孤独"
-python vault_tool.py book --isbn 9787544253994
-python vault_tool.py movie "盗梦空间"
-python vault_tool.py movie "3年A班" --type teleplay
-```
-
-See `backend/` for configuration details. The plugin does not depend on this CLI.

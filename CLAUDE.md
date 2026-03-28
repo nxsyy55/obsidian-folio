@@ -13,36 +13,7 @@ npm run build
 
 Copy `main.js`, `manifest.json`, `styles.css` to `.obsidian/plugins/douban-obsidian/` in your vault. Configure Firecrawl API key and inbox folder in Settings → Douban Notes.
 
-**Standalone Python CLI** (optional, not required by the plugin):
-
-```bash
-cd backend
-pip install requests beautifulsoup4 thefuzz firecrawl-py python-dotenv
-# or with uv:
-uv sync
-```
-
-Copy `.env.example` → `.env` and fill in your values:
-```
-FIRECRAWL_API_KEY=your_key_here
-OBSIDIAN_VAULT_PATH=/path/to/your/obsidian/vault
-```
-
-Copy `config.example.json` → `backend/config.json` and set `vault_name` and directory names.
-
-## Running
-
 The plugin is self-contained — install it in Obsidian, configure your Firecrawl API key in Settings → Douban Notes, and use the Command Palette to add book/movie notes.
-
-**Standalone Python CLI** (for power users, not required by the plugin):
-
-```bash
-cd backend
-python vault_tool.py book "书名"
-python vault_tool.py book --isbn 9787544291552
-python vault_tool.py movie "电影名"
-python vault_tool.py movie "剧名" --type teleplay
-```
 
 ## Architecture
 
@@ -61,13 +32,10 @@ Five TypeScript modules in `src/`:
 
 **Cache:** JSON file at `.obsidian/plugins/douban-obsidian/cache.json` via `vault.adapter`. Delete an entry to force re-fetch.
 
-**Python backend** (`backend/`) is kept as a standalone CLI for power users. The plugin no longer depends on it.
-
 ## Key Constraints
 
 - Notes land in `inboxDir` first; user moves them to final location
 - Plugin uses Obsidian's `requestUrl` for Douban JSON APIs; Firecrawl handles all HTML detail page fetches
-- Python backend is standalone; plugin has no dependency on it
 
 ## Documentation Rule
 
