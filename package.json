@@ -4,8 +4,8 @@
   "description": "Create Obsidian notes for books and movies from Douban",
   "main": "main.js",
   "scripts": {
-    "dev": "node esbuild.config.mjs",
-    "build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
+    "dev": "node build/esbuild.config.mjs",
+    "build": "tsc -noEmit -skipLibCheck && node build/esbuild.config.mjs production",
     "deploy": "npm run build && node -e \"const fs=require('fs'); const dest='../.obsidian/plugins/douban-obsidian/'; ['main.js','manifest.json','styles.css'].forEach(f=>{ if(fs.existsSync(f)) fs.copyFileSync(f, dest+f); });\""
   },
   "keywords": [],
