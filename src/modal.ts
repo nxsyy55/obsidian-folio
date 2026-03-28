@@ -143,3 +143,43 @@ export class DisambiguationModal extends Modal {
         this.contentEl.empty();
     }
 }
+
+export class BlankNoteModal extends Modal {
+    private title: string;
+    private onSelect: (type: 'book' | 'movie') => void;
+
+    constructor(app: App, title: string, onSelect: (type: 'book' | 'movie') => void) {
+        super(app);
+        this.title = title;
+        this.onSelect = onSelect;
+    }
+
+    onOpen(): void {
+        const { contentEl } = this;
+        contentEl.empty();
+        this.titleEl.setText('Folio: No Results Found');
+
+        const msg = contentEl.createEl('p', {
+            text: `No results for "${this.title}". Create a blank note as:`,
+        });
+        msg.style.marginBottom = '1em';
+
+        const buttonRow = contentEl.createDiv();
+        buttonRow.style.display = 'flex';
+        buttonRow.style.gap = '8px';
+
+        const bookBtn = buttonRow.createEl('button', { text: 'Book' });
+        bookBtn.addClass('mod-cta');
+        bookBtn.addEventListener('click', () => { this.close(); this.onSelect('book'); });
+
+        const movieBtn = buttonRow.createEl('button', { text: 'Movie' });
+        movieBtn.addEventListener('click', () => { this.close(); this.onSelect('movie'); });
+
+        const cancelBtn = buttonRow.createEl('button', { text: 'Cancel' });
+        cancelBtn.addEventListener('click', () => this.close());
+    }
+
+    onClose(): void {
+        this.contentEl.empty();
+    }
+}
