@@ -300,7 +300,7 @@ export async function fetchBookDetail(
                 result = parseBookHtml(fc.html, id, url);
             }
         } catch (e) {
-            console.warn(`douban-obsidian: Firecrawl failed for book ${id}:`, e);
+            console.warn(`folio: Firecrawl failed for book ${id}:`, e);
         }
     }
 
@@ -314,7 +314,7 @@ export async function fetchBookDetail(
             });
             if (resp.status === 200) result = parseBookHtml(resp.text, id, url);
         } catch (e) {
-            console.warn(`douban-obsidian: direct fetch failed for book ${id}:`, e);
+            console.warn(`folio: direct fetch failed for book ${id}:`, e);
         }
     }
 
@@ -373,7 +373,7 @@ export async function fetchMovieDetail(
             };
         }
     } catch (e) {
-        console.warn(`douban-obsidian: failed to fetch movie abstract for ${id}:`, e);
+        console.warn(`folio: failed to fetch movie abstract for ${id}:`, e);
         return null;
     }
 
@@ -396,7 +396,7 @@ export async function fetchMovieDetail(
                 if (ex.time) result.time = String(ex.time);
             }
         } catch (e) {
-            console.warn(`douban-obsidian: Firecrawl failed for movie ${id}:`, e);
+            console.warn(`folio: Firecrawl failed for movie ${id}:`, e);
         }
     }
 
@@ -423,7 +423,7 @@ export async function fetchMovieDetail(
                 }
             }
         } catch (e) {
-            console.warn(`douban-obsidian: direct fetch supplement failed for movie ${id}:`, e);
+            console.warn(`folio: direct fetch supplement failed for movie ${id}:`, e);
         }
     }
 

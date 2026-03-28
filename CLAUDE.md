@@ -11,7 +11,7 @@ npm install
 npm run build
 ```
 
-Copy `main.js`, `manifest.json`, `styles.css` to `.obsidian/plugins/douban-obsidian/` in your vault. Configure Firecrawl API key (optional) and inbox folder in Settings → Folio.
+Copy `main.js`, `manifest.json`, `styles.css` to `.obsidian/plugins/folio/` in your vault. Configure Firecrawl API key (optional) and inbox folder in Settings → Folio.
 
 ## Running
 
@@ -45,7 +45,7 @@ Command → DoubanModal (query + ISBN + template)
 
 **Firecrawl integration:** `POST https://api.firecrawl.dev/v1/scrape` with `Authorization: Bearer <key>`. Used only by `fetchBookDetail` and `fetchMovieDetail` in `douban.ts`. Falls back to HTML parse on failure.
 
-**Cache:** JSON file at `.obsidian/plugins/douban-obsidian/cache.json` via `vault.adapter`. Delete an entry to force re-fetch.
+**Cache:** JSON file at `.obsidian/plugins/folio/cache.json` via `vault.adapter`. Delete an entry to force re-fetch.
 
 ## Key Constraints
 
