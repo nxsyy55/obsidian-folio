@@ -45,14 +45,14 @@ export default class DoubanPlugin extends Plugin {
 
         this.addCommand({
             id: 'add-note',
-            name: 'Add Note',
+            name: 'Add note',
             callback: () => {
                 new DoubanModal(this.app, this.settings.templates, (query, isbn, tplIndex) => {
                     const template = tplIndex >= 0 ? this.settings.templates[tplIndex] : null;
                     if (isbn) {
-                        this.runBackend('', { isbn, template });
+                        void this.runBackend('', { isbn, template });
                     } else {
-                        this.runBackend(query, { template });
+                        void this.runBackend(query, { template });
                     }
                 }).open();
             },
@@ -90,13 +90,15 @@ export default class DoubanPlugin extends Plugin {
             notice.hide();
 
             if (results.length === 0) {
-                new BlankNoteModal(this.app, title, async type => {
-                    try {
-                        const content = renderBlankNote(title, type, options.template ?? null);
-                        await this.writeNote(title, content);
-                    } catch (e) {
-                        new Notice(`Error: ${e instanceof Error ? e.message : String(e)}`, 8000);
-                    }
+                new BlankNoteModal(this.app, title, type => {
+                    void (async () => {
+                        try {
+                            const content = renderBlankNote(title, type, options.template ?? null);
+                            await this.writeNote(title, content);
+                        } catch (e) {
+                            new Notice(`Error: ${e instanceof Error ? e.message : String(e)}`, 8000);
+                        }
+                    })();
                 }).open();
                 return;
             }
@@ -111,7 +113,7 @@ export default class DoubanPlugin extends Plugin {
             }
 
             new DisambiguationModal(this.app, results, selected => {
-                this.fetchAndCreate(selected.title || title, selected.id, selected.source, {
+                void this.fetchAndCreate(selected.title || title, selected.id, selected.source, {
                     ...options,
                     category: selected.type === 'book' ? 'book' : 'movie',
                     mediaType: selected.type === 'teleplay' ? 'teleplay' : undefined,
@@ -190,7 +192,7 @@ export default class DoubanPlugin extends Plugin {
             return;
         }
         new Notice(`Note created: ${filename}`, 4000);
-        this.app.workspace.openLinkText(filename, '', true).catch(() => {});
+        void this.app.workspace.openLinkText(filename, '', true).catch(() => {});
     }
 
     async loadSettings(): Promise<void> {

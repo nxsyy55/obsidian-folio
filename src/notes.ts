@@ -35,10 +35,10 @@ export function yamlValue(value: string | number | null | undefined, forceQuote 
     const s = String(value);
     if (forceQuote) return `"${s}"`;
     if (
-        /^[{['"\&*!|>%@`]/.test(s) ||
+        /^[{['"&*!|>%@`]/.test(s) ||
         s.startsWith('- ') ||
         s.startsWith('? ') ||
-        /[#\[\]{}]|: /.test(s)
+        /[#[\]{}]|: /.test(s)
     ) {
         return `"${s}"`;
     }

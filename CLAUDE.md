@@ -2,22 +2,23 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Setup
-
-**Plugin (TypeScript):**
+## Commands
 
 ```bash
-npm install
-npm run build
+npm install          # install deps
+npm run dev          # watch mode (esbuild, no type-check)
+npm run build        # type-check + esbuild production bundle
+npm run deploy       # build + copy main.js/manifest.json/styles.css to vault plugin folder
 ```
 
-Copy `main.js`, `manifest.json`, `styles.css` to `.obsidian/plugins/folio/` in your vault. Configure Firecrawl API key (optional) and inbox folder in Settings → Folio.
+**First-time deploy setup:** `npm run deploy` reads the vault path from `vault.config.json` (gitignored). Copy the example and set your vault path:
+```bash
+cp vault.config.json.example vault.config.json
+# edit vault.config.json: { "vaultPath": "C:/path/to/your/vault" }
+```
+Falls back to `../` (parent folder) if no config file exists.
 
-## Running
-
-The plugin is self-contained — install it in Obsidian and use the Command Palette to run **Folio: Add Note**.
-
-Firecrawl API key is optional: only needed for Douban book and movie detail fetches. English sources (IMDB, Open Library, Google Books) work without it.
+There are no automated tests. Validation is done by installing the built plugin in Obsidian.
 
 ## Architecture
 
@@ -45,7 +46,7 @@ Command → DoubanModal (query + ISBN + template)
 
 **Firecrawl integration:** `POST https://api.firecrawl.dev/v1/scrape` with `Authorization: Bearer <key>`. Used only by `fetchBookDetail` and `fetchMovieDetail` in `douban.ts`. Falls back to HTML parse on failure.
 
-**Cache:** JSON file at `.obsidian/plugins/folio/cache.json` via `vault.adapter`. Delete an entry to force re-fetch.
+**Cache:** JSON at `{vault.configDir}/plugins/folio/cache.json` via `vault.adapter`. Delete an entry to force re-fetch.
 
 ## Key Constraints
 
@@ -53,6 +54,24 @@ Command → DoubanModal (query + ISBN + template)
 - Firecrawl is optional — only Douban detail fetches use it; all other sources use `requestUrl` directly
 - `requestDelay` applies only to Douban fetches; IMDB/Open Library/Google Books fire immediately
 - `manifest.json`, `styles.css`, `main.js` must stay at repo root (Obsidian marketplace requirement)
+
+## Obsidian Marketplace Validation Rules
+
+These are enforced by the marketplace linter — violations cause submission rejection:
+
+**Config directory:** Never hardcode `.obsidian/`. Always use `this.app.vault.configDir` (from `Plugin`) or pass it through. The cache path must be `normalizePath(`${vault.configDir}/plugins/folio/cache.json`)`.
+
+**String coercion:** `?? ''` is unsafe when the value may be a non-primitive (object, array). Always wrap with `String(...)`: `String(item.title ?? '')`. This applies to every field from external API JSON responses.
+
+**Inline styles:** Do not set `element.style.*` properties. Use CSS classes in `styles.css` and `el.addClass()`/`el.toggleClass()`. The only Obsidian-approved exception is `setCssProps()` for dynamic CSS custom properties.
+
+**Promise handling:** Every unhandled promise must be explicitly marked: `void somePromise()` (fire-and-forget), `.catch(handler)`, or `await`. Passing an async lambda where `void` is expected also needs `void` prefix.
+
+**Settings UI:** Use `new Setting(containerEl).setName('…').setHeading()` instead of `containerEl.createEl('h3', …)` for section headings.
+
+**UI text casing:** All user-visible strings (labels, button text, placeholders, notices) must use sentence case — capitalize only the first word and proper nouns. E.g., `'Add note'` not `'Add Note'`; `'No results found'` not `'No Results Found'`.
+
+**Regex escapes:** Remove unnecessary escapes inside character classes. `[&]` → `[&]`, `[\[]` → `[[]`.
 
 ## Documentation Rule
 

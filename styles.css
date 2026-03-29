@@ -1,1 +1,86 @@
 /* Folio plugin styles */
+
+/* ── Shared field styles ───────────────────────────────────────────────── */
+.folio-field {
+    width: 100%;
+    margin-bottom: var(--size-4-3);
+    box-sizing: border-box;
+}
+
+.folio-field-label {
+    display: block;
+    font-size: var(--font-smaller);
+    margin-bottom: var(--size-4-1);
+    color: var(--text-muted);
+}
+
+/* ── Search modal ──────────────────────────────────────────────────────── */
+.folio-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: var(--size-4-2);
+}
+
+/* ── Disambiguation modal ──────────────────────────────────────────────── */
+.folio-candidate {
+    padding: var(--size-4-2) var(--size-4-3);
+    cursor: pointer;
+    border-bottom: 1px solid var(--background-modifier-border);
+    border-radius: var(--radius-s);
+}
+
+.folio-candidate:hover {
+    background: var(--background-modifier-hover);
+}
+
+/* ── Blank note modal ──────────────────────────────────────────────────── */
+.folio-blank-message {
+    margin-bottom: var(--size-4-4);
+}
+
+.folio-blank-actions {
+    display: flex;
+    gap: var(--size-4-2);
+}
+
+/* ── Template settings ─────────────────────────────────────────────────── */
+.folio-template-block {
+    border: 1px solid var(--background-modifier-border);
+    border-radius: var(--radius-m);
+    padding: var(--size-4-3);
+    margin-bottom: var(--size-4-3);
+}
+
+.folio-template-header {
+    display: flex;
+    align-items: center;
+    gap: var(--size-4-2);
+    margin-bottom: var(--size-4-2);
+}
+
+.folio-template-name {
+    flex: 1;
+    font-weight: var(--font-semibold);
+}
+
+.folio-setting-label {
+    display: block;
+    font-size: var(--font-smaller);
+    margin-bottom: var(--size-4-1);
+}
+
+.folio-setting-input {
+    width: 100%;
+    margin-bottom: var(--size-4-2);
+}
+
+.folio-template-body {
+    width: 100%;
+    min-height: 100px;
+    font-family: var(--font-monospace);
+    font-size: var(--font-small);
+}
+
+.folio-add-template-btn {
+    margin-top: var(--size-4-2);
+}

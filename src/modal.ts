@@ -27,39 +27,28 @@ export class DoubanModal extends Modal {
     onOpen(): void {
         const { contentEl } = this;
         contentEl.empty();
-        this.titleEl.setText('Folio: Add Note');
-
-        const fieldStyle = (el: HTMLElement) => {
-            el.style.width = '100%';
-            el.style.marginBottom = '0.75em';
-            el.style.boxSizing = 'border-box';
-        };
+        this.titleEl.setText('Folio: Add note');
 
         const makeLabel = (text: string) => {
-            const lbl = contentEl.createEl('label', { text });
-            lbl.style.display = 'block';
-            lbl.style.fontSize = '0.85em';
-            lbl.style.marginBottom = '3px';
-            lbl.style.color = 'var(--text-muted)';
+            contentEl.createEl('label', { text, cls: 'folio-field-label' });
         };
 
         makeLabel('Search');
         const searchEl = contentEl.createEl('input', {
             type: 'text',
             placeholder: 'Title, author, or keyword...',
+            cls: 'folio-field',
         });
-        fieldStyle(searchEl);
 
         makeLabel('ISBN (books only)');
         const isbnEl = contentEl.createEl('input', {
             type: 'text',
             placeholder: 'e.g. 9787302423287',
+            cls: 'folio-field',
         });
-        fieldStyle(isbnEl);
 
         makeLabel('Template');
-        const tplSelect = contentEl.createEl('select');
-        fieldStyle(tplSelect);
+        const tplSelect = contentEl.createEl('select', { cls: 'folio-field' });
         tplSelect.createEl('option', { text: '— None —', value: '' });
         this.templates.forEach((tpl, i) => {
             tplSelect.createEl('option', { text: tpl.name, value: String(i) });
@@ -77,11 +66,7 @@ export class DoubanModal extends Modal {
         searchEl.addEventListener('keydown', (e: KeyboardEvent) => { if (e.key === 'Enter') doSubmit(); });
         isbnEl.addEventListener('keydown', (e: KeyboardEvent) => { if (e.key === 'Enter') doSubmit(); });
 
-        const buttonRow = contentEl.createDiv({ cls: 'modal-button-container' });
-        buttonRow.style.display = 'flex';
-        buttonRow.style.justifyContent = 'flex-end';
-        buttonRow.style.marginTop = '0.5em';
-
+        const buttonRow = contentEl.createDiv({ cls: 'modal-button-container folio-modal-actions' });
         const addBtn = buttonRow.createEl('button', { text: 'Add' });
         addBtn.addClass('mod-cta');
         addBtn.addEventListener('click', doSubmit);
@@ -107,7 +92,7 @@ export class DisambiguationModal extends Modal {
     onOpen(): void {
         const { contentEl } = this;
         contentEl.empty();
-        this.titleEl.setText('Folio: Select Result');
+        this.titleEl.setText('Folio: Select result');
 
         const sourceLabel: Record<string, string> = {
             douban: 'Douban',
@@ -117,11 +102,7 @@ export class DisambiguationModal extends Modal {
         };
 
         this.candidates.forEach((candidate) => {
-            const row = contentEl.createDiv();
-            row.style.padding = '0.5em 0.75em';
-            row.style.cursor = 'pointer';
-            row.style.borderBottom = '1px solid var(--background-modifier-border)';
-            row.style.borderRadius = '4px';
+            const row = contentEl.createDiv({ cls: 'folio-candidate' });
 
             const label = [
                 candidate.title,
@@ -130,8 +111,6 @@ export class DisambiguationModal extends Modal {
             ].join('');
             row.setText(label);
 
-            row.addEventListener('mouseenter', () => { row.style.background = 'var(--background-modifier-hover)'; });
-            row.addEventListener('mouseleave', () => { row.style.background = ''; });
             row.addEventListener('click', () => {
                 this.close();
                 this.onSelect(candidate);
@@ -157,16 +136,14 @@ export class BlankNoteModal extends Modal {
     onOpen(): void {
         const { contentEl } = this;
         contentEl.empty();
-        this.titleEl.setText('Folio: No Results Found');
+        this.titleEl.setText('Folio: No results found');
 
-        const msg = contentEl.createEl('p', {
+        contentEl.createEl('p', {
             text: `No results for "${this.title}". Create a blank note as:`,
+            cls: 'folio-blank-message',
         });
-        msg.style.marginBottom = '1em';
 
-        const buttonRow = contentEl.createDiv();
-        buttonRow.style.display = 'flex';
-        buttonRow.style.gap = '8px';
+        const buttonRow = contentEl.createDiv({ cls: 'folio-blank-actions' });
 
         const bookBtn = buttonRow.createEl('button', { text: 'Book' });
         bookBtn.addClass('mod-cta');

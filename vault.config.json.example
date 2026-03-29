@@ -1,0 +1,4 @@
+{
+  "_comment": "Copy this file to vault.config.json and set your vault path. vault.config.json is gitignored.",
+  "vaultPath": "C:/path/to/your/obsidian/vault"
+}

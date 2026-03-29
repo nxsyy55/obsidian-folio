@@ -44,9 +44,9 @@ export class DoubanSettingTab extends PluginSettingTab {
                 text
                     .setPlaceholder('fc-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx')
                     .setValue(this.plugin.settings.firecrawlApiKey)
-                    .onChange(async value => {
+                    .onChange(value => {
                         this.plugin.settings.firecrawlApiKey = value.trim();
-                        await this.plugin.saveSettings();
+                        void this.plugin.saveSettings();
                     })
             );
 
@@ -57,9 +57,9 @@ export class DoubanSettingTab extends PluginSettingTab {
                 text
                     .setPlaceholder('inbox')
                     .setValue(this.plugin.settings.inboxDir)
-                    .onChange(async value => {
+                    .onChange(value => {
                         this.plugin.settings.inboxDir = value.trim() || 'inbox';
-                        await this.plugin.saveSettings();
+                        void this.plugin.saveSettings();
                     })
             );
 
@@ -71,13 +71,13 @@ export class DoubanSettingTab extends PluginSettingTab {
                     .setLimits(0, 10, 1)
                     .setValue(this.plugin.settings.requestDelay)
                     .setDynamicTooltip()
-                    .onChange(async value => {
+                    .onChange(value => {
                         this.plugin.settings.requestDelay = value;
-                        await this.plugin.saveSettings();
+                        void this.plugin.saveSettings();
                     })
             );
 
-        containerEl.createEl('h3', { text: 'Templates' });
+        new Setting(containerEl).setName('Templates').setHeading();
         containerEl.createEl('p', {
             text: 'Templates control the tags and body structure appended to each new note. The YAML frontmatter is always populated from online data. Leave all templates empty to get bare frontmatter only.',
             cls: 'setting-item-description',
@@ -90,72 +90,58 @@ export class DoubanSettingTab extends PluginSettingTab {
 
             this.plugin.settings.templates.forEach((tpl, idx) => {
                 const block = containerEl.createDiv({ cls: 'folio-template-block' });
-                block.style.border = '1px solid var(--background-modifier-border)';
-                block.style.borderRadius = '6px';
-                block.style.padding = '12px';
-                block.style.marginBottom = '12px';
 
-                const headerRow = block.createDiv();
-                headerRow.style.display = 'flex';
-                headerRow.style.alignItems = 'center';
-                headerRow.style.gap = '8px';
-                headerRow.style.marginBottom = '8px';
+                const headerRow = block.createDiv({ cls: 'folio-template-header' });
 
                 const nameInput = headerRow.createEl('input', { type: 'text', placeholder: 'Template name' });
-                nameInput.style.flex = '1';
-                nameInput.style.fontWeight = 'bold';
+                nameInput.addClass('folio-template-name');
                 nameInput.value = tpl.name;
-                nameInput.addEventListener('change', async () => {
+                nameInput.addEventListener('change', () => {
                     this.plugin.settings.templates[idx].name = nameInput.value.trim();
-                    await this.plugin.saveSettings();
+                    void this.plugin.saveSettings();
                 });
 
                 const delBtn = headerRow.createEl('button', { text: 'Delete' });
-                delBtn.addEventListener('click', async () => {
+                delBtn.addEventListener('click', () => {
                     this.plugin.settings.templates.splice(idx, 1);
-                    await this.plugin.saveSettings();
+                    void this.plugin.saveSettings();
                     renderTemplates();
                 });
 
-                const tagsLabel = block.createEl('label', { text: 'Tags (comma-separated):' });
-                tagsLabel.style.display = 'block';
-                tagsLabel.style.fontSize = '0.85em';
-                tagsLabel.style.marginBottom = '4px';
+                block.createEl('label', { text: 'Tags (comma-separated):', cls: 'folio-setting-label' });
 
                 const tagsInput = block.createEl('input', { type: 'text', placeholder: 'book, to-read' });
-                tagsInput.style.width = '100%';
-                tagsInput.style.marginBottom = '8px';
+                tagsInput.addClass('folio-setting-input');
                 tagsInput.value = (tpl.tags ?? []).join(', ');
-                tagsInput.addEventListener('change', async () => {
+                tagsInput.addEventListener('change', () => {
                     this.plugin.settings.templates[idx].tags = tagsInput.value
                         .split(',')
                         .map(t => t.trim())
                         .filter(Boolean);
-                    await this.plugin.saveSettings();
+                    void this.plugin.saveSettings();
                 });
 
-                const bodyLabel = block.createEl('label', { text: 'Note body (markdown, appended below frontmatter):' });
-                bodyLabel.style.display = 'block';
-                bodyLabel.style.fontSize = '0.85em';
-                bodyLabel.style.marginBottom = '4px';
+                block.createEl('label', {
+                    text: 'Note body (markdown, appended below frontmatter):',
+                    cls: 'folio-setting-label',
+                });
 
                 const bodyArea = block.createEl('textarea');
-                bodyArea.style.width = '100%';
-                bodyArea.style.minHeight = '100px';
-                bodyArea.style.fontFamily = 'var(--font-monospace)';
-                bodyArea.style.fontSize = '0.9em';
+                bodyArea.addClass('folio-template-body');
                 bodyArea.value = tpl.body ?? '';
-                bodyArea.addEventListener('change', async () => {
+                bodyArea.addEventListener('change', () => {
                     this.plugin.settings.templates[idx].body = bodyArea.value;
-                    await this.plugin.saveSettings();
+                    void this.plugin.saveSettings();
                 });
             });
 
-            const addBtn = containerEl.createEl('button', { text: '+ Add Template', cls: 'folio-add-template-btn' });
-            addBtn.style.marginTop = '8px';
-            addBtn.addEventListener('click', async () => {
-                this.plugin.settings.templates.push({ name: 'New Template', tags: [], body: '' });
-                await this.plugin.saveSettings();
+            const addBtn = containerEl.createEl('button', {
+                text: '+ Add template',
+                cls: 'folio-add-template-btn',
+            });
+            addBtn.addEventListener('click', () => {
+                this.plugin.settings.templates.push({ name: 'New template', tags: [], body: '' });
+                void this.plugin.saveSettings();
                 renderTemplates();
             });
         };

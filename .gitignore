@@ -5,6 +5,7 @@
 .env
 config.json
 cache.json
+vault.config.json
 
 # Git worktrees
 .worktrees/
