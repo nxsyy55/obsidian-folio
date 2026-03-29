@@ -198,7 +198,7 @@ export async function searchDouban(query: string, mediaType?: string): Promise<C
                 headers: { 'User-Agent': DEFAULT_UA },
             });
             for (const item of resp.json as Record<string, unknown>[]) {
-                const rawType = String(item.type ?? '');
+                const rawType = safeStr(item.type);
                 const itemType =
                     rawType === 'b'
                         ? 'book'
@@ -207,11 +207,11 @@ export async function searchDouban(query: string, mediaType?: string): Promise<C
                         : source;
                 if (mediaType && itemType !== mediaType) continue;
                 results.push({
-                    id: String(item.id ?? ''),
-                    title: String(item.title ?? ''),
-                    sub_title: String(item.sub_title ?? item.author_name ?? ''),
+                    id: safeStr(item.id),
+                    title: safeStr(item.title),
+                    sub_title: safeStr(item.sub_title) || safeStr(item.author_name),
                     type: itemType,
-                    year: String(item.year ?? ''),
+                    year: safeStr(item.year),
                     source: 'douban',
                 });
             }
@@ -272,17 +272,17 @@ function parseBookHtml(html: string, id: string, url: string): BookMetadata {
 function mapBookExtract(extract: Record<string, unknown>, id: string, url: string): BookMetadata {
     return {
         type: 'book',
-        title: String(extract.title ?? ''),
-        subTitle: String(extract.subTitle ?? ''),
-        originalTitle: String(extract.originalTitle ?? ''),
-        series: String(extract.series ?? ''),
+        title: safeStr(extract.title),
+        subTitle: safeStr(extract.subTitle),
+        originalTitle: safeStr(extract.originalTitle),
+        series: safeStr(extract.series),
         author: ((extract.author as string[]) ?? []).map(normalizeAuthor),
-        score: String(extract.score ?? ''),
-        datePublished: normalizeDate(String(extract.datePublished ?? '')),
+        score: safeStr(extract.score),
+        datePublished: normalizeDate(safeStr(extract.datePublished)),
         translator: (extract.translator as string[]) ?? [],
-        publisher: String(extract.publisher ?? ''),
-        producer: String(extract.producer ?? ''),
-        isbn: String(extract.isbn ?? ''),
+        publisher: safeStr(extract.publisher),
+        producer: safeStr(extract.producer),
+        isbn: safeStr(extract.isbn),
         url,
     };
 }
@@ -363,23 +363,23 @@ export async function fetchMovieDetail(
         });
         const data = resp.json?.subject as Record<string, unknown>;
         if (data) {
-            const [title, originalTitle] = splitTitleOriginal(String(data.title ?? ''));
+            const [title, originalTitle] = splitTitleOriginal(safeStr(data.title));
             const isTV = data.is_tv || data.episodes_count;
             result = {
                 title,
                 type: isTV ? 'teleplay' : 'movie',
                 originalTitle,
                 genre: (data.types as string[]) ?? [],
-                datePublished: String(data.release_year ?? ''),
+                datePublished: safeStr(data.release_year),
                 director: (data.directors as string[]) ?? [],
-                score: String((data.rating as Record<string, unknown>)?.value ?? ''),
+                score: safeStr((data.rating as Record<string, unknown>)?.value),
                 url,
-                country: String(data.region ?? '')
+                country: safeStr(data.region)
                     .split('/')
                     .map(s => s.trim())
                     .filter(Boolean),
                 IMDb: '',
-                time: String(data.duration ?? ''),
+                time: safeStr(data.duration),
             };
         }
     } catch (e) {
@@ -396,14 +396,14 @@ export async function fetchMovieDetail(
             const fc = await firecrawlScrape(url, settings.firecrawlApiKey, MOVIE_SCHEMA);
             if (fc.extract?.title) {
                 const ex = fc.extract;
-                if (ex.originalTitle) result.originalTitle = String(ex.originalTitle);
+                if (ex.originalTitle) result.originalTitle = safeStr(ex.originalTitle);
                 if (ex.genre) result.genre = ex.genre as string[];
-                if (ex.datePublished) result.datePublished = String(ex.datePublished);
+                if (ex.datePublished) result.datePublished = safeStr(ex.datePublished);
                 if (ex.director) result.director = ex.director as string[];
-                if (ex.score) result.score = String(ex.score);
+                if (ex.score) result.score = safeStr(ex.score);
                 if (ex.country) result.country = ex.country as string[];
-                if (ex.IMDb) result.IMDb = String(ex.IMDb);
-                if (ex.time) result.time = String(ex.time);
+                if (ex.IMDb) result.IMDb = safeStr(ex.IMDb);
+                if (ex.time) result.time = safeStr(ex.time);
             }
         } catch (e) {
             console.warn(`folio: Firecrawl failed for movie ${id}:`, e);
