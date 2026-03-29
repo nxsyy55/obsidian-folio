@@ -61,7 +61,7 @@ These are enforced by the marketplace linter — violations cause submission rej
 
 **Config directory:** Never hardcode `.obsidian/`. Always use `this.app.vault.configDir` (from `Plugin`) or pass it through. The cache path must be `normalizePath(`${vault.configDir}/plugins/folio/cache.json`)`.
 
-**String coercion:** `?? ''` is unsafe when the value may be a non-primitive (object, array). Always wrap with `String(...)`: `String(item.title ?? '')`. This applies to every field from external API JSON responses.
+**String coercion:** Both `?? ''` and `String(x ?? '')` are unsafe when the value may be a non-primitive (object, array) — `String({})` produces `[object Object]`. Always use `safeStr()` from `src/douban.ts` for every field from external API JSON responses: `safeStr(item.title)`. The `safeStr` function returns `''` for any non-string, non-number value.
 
 **Inline styles:** Do not set `element.style.*` properties. Use CSS classes in `styles.css` and `el.addClass()`/`el.toggleClass()`. The only Obsidian-approved exception is `setCssProps()` for dynamic CSS custom properties.
 
