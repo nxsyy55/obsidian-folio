@@ -2,7 +2,7 @@ import { requestUrl, Vault } from 'obsidian';
 import type { Candidate } from './modal';
 import { BookMetadata, MovieMetadata } from './notes';
 import { loadCache, saveCache } from './cache';
-import { searchDouban, searchByIsbn } from './douban';
+import { searchDouban, searchByIsbn, safeStr } from './douban';
 
 const DEFAULT_UA =
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 ' +
@@ -29,11 +29,11 @@ export async function searchGoogleBooks(query: string): Promise<Candidate[]> {
             const info = (item.volumeInfo as Record<string, unknown>) ?? {};
             const authors = (info.authors as string[]) ?? [];
             return {
-                id: String(item.id ?? ''),
-                title: String(info.title ?? ''),
+                id: safeStr(item.id),
+                title: safeStr(info.title),
                 sub_title: authors.join(', '),
                 type: 'book',
-                year: String(info.publishedDate ?? '').slice(0, 4),
+                year: safeStr(info.publishedDate).slice(0, 4),
                 source: 'googlebooks' as const,
             };
         });
@@ -62,15 +62,15 @@ export async function fetchGoogleBooksDetail(id: string, vault: Vault): Promise<
 
         const result: BookMetadata = {
             type: 'book',
-            title: String(info.title ?? ''),
-            subTitle: String(info.subtitle ?? ''),
+            title: safeStr(info.title),
+            subTitle: safeStr(info.subtitle),
             originalTitle: '',
             series: '',
             author: (info.authors as string[]) ?? [],
             score: '',
-            datePublished: String(info.publishedDate ?? '').slice(0, 10),
+            datePublished: safeStr(info.publishedDate).slice(0, 10),
             translator: [],
-            publisher: String(info.publisher ?? ''),
+            publisher: safeStr(info.publisher),
             producer: '',
             isbn,
             url: `https://books.google.com/books?id=${id}`,
@@ -111,13 +111,13 @@ export async function searchIMDB(query: string): Promise<Candidate[]> {
         if (resp.status !== 200) return [];
         const items = (resp.json?.d as Record<string, unknown>[]) ?? [];
         return items
-            .filter(item => ['movie', 'tvSeries', 'tvMiniSeries'].includes(String(item.qid ?? '')))
+            .filter(item => ['movie', 'tvSeries', 'tvMiniSeries'].includes(safeStr(item.qid)))
             .map(item => ({
-                id: String(item.id ?? ''),
-                title: String(item.l ?? ''),
-                sub_title: String(item.s ?? ''),
-                type: imdbQidToType(String(item.qid ?? '')),
-                year: String(item.y ?? ''),
+                id: safeStr(item.id),
+                title: safeStr(item.l),
+                sub_title: safeStr(item.s),
+                type: imdbQidToType(safeStr(item.qid)),
+                year: safeStr(item.y),
                 source: 'imdb' as const,
             }));
     } catch {
@@ -144,36 +144,36 @@ export async function fetchIMDBDetail(id: string, vault: Vault): Promise<MovieMe
 
         const ld = JSON.parse(ldScript.textContent) as Record<string, unknown>;
 
-        const ldType = String(ld['@type'] ?? '');
+        const ldType = safeStr(ld['@type']);
         const type: 'movie' | 'teleplay' =
             ldType === 'TVSeries' || ldType === 'TVMiniSeries' ? 'teleplay' : 'movie';
 
         const rawDirector = ld.director;
         const directors: string[] = Array.isArray(rawDirector)
-            ? (rawDirector as Record<string, unknown>[]).map(d => String(d.name ?? ''))
+            ? (rawDirector as Record<string, unknown>[]).map(d => safeStr(d.name))
             : rawDirector
-            ? [String((rawDirector as Record<string, unknown>).name ?? '')]
+            ? [safeStr((rawDirector as Record<string, unknown>).name)]
             : [];
 
         const rawCountry = ld.countryOfOrigin;
         const countries: string[] = Array.isArray(rawCountry)
-            ? (rawCountry as Record<string, unknown>[]).map(c => String(c.name ?? ''))
+            ? (rawCountry as Record<string, unknown>[]).map(c => safeStr(c.name))
             : rawCountry
-            ? [String((rawCountry as Record<string, unknown>).name ?? '')]
+            ? [safeStr((rawCountry as Record<string, unknown>).name)]
             : [];
 
         const result: MovieMetadata = {
-            title: String(ld.name ?? ''),
+            title: safeStr(ld.name),
             type,
             originalTitle: '',
-            genre: Array.isArray(ld.genre) ? (ld.genre as string[]) : ld.genre ? [String(ld.genre)] : [],
-            datePublished: String(ld.datePublished ?? ''),
+            genre: Array.isArray(ld.genre) ? (ld.genre as string[]) : ld.genre ? [safeStr(ld.genre)] : [],
+            datePublished: safeStr(ld.datePublished),
             director: directors,
-            score: String((ld.aggregateRating as Record<string, unknown>)?.ratingValue ?? ''),
+            score: safeStr((ld.aggregateRating as Record<string, unknown>)?.ratingValue),
             url: `https://www.imdb.com/title/${id}/`,
             country: countries,
             IMDb: id,
-            time: ld.duration ? parseIso8601Duration(String(ld.duration)) : '',
+            time: ld.duration ? parseIso8601Duration(safeStr(ld.duration)) : '',
         };
 
         cache[cacheKey] = result;
@@ -196,15 +196,15 @@ export async function searchOpenLibrary(query: string): Promise<Candidate[]> {
         if (resp.status !== 200) return [];
         const docs = (resp.json?.docs as Record<string, unknown>[]) ?? [];
         return docs.map(doc => {
-            const key = String(doc.key ?? '');          // "/works/OL45804W"
+            const key = safeStr(doc.key);          // "/works/OL45804W"
             const id = key.replace('/works/', '');
             const authors = (doc.author_name as string[]) ?? [];
             return {
                 id,
-                title: String(doc.title ?? ''),
+                title: safeStr(doc.title),
                 sub_title: authors.join(', '),
                 type: 'book',
-                year: String(doc.first_publish_year ?? ''),
+                year: safeStr(doc.first_publish_year),
                 source: 'openlibrary' as const,
             };
         });
@@ -241,7 +241,7 @@ export async function fetchOpenLibraryDetail(id: string, vault: Vault): Promise<
                         headers: { 'User-Agent': DEFAULT_UA },
                         throw: false,
                     });
-                    return ar.status === 200 ? String(ar.json?.name ?? '') : '';
+                    return ar.status === 200 ? safeStr(ar.json?.name) : '';
                 } catch {
                     return '';
                 }
@@ -250,13 +250,13 @@ export async function fetchOpenLibraryDetail(id: string, vault: Vault): Promise<
 
         const result: BookMetadata = {
             type: 'book',
-            title: String(work.title ?? ''),
+            title: safeStr(work.title),
             subTitle: '',
             originalTitle: '',
             series: '',
             author: authorNames.filter(Boolean),
             score: '',
-            datePublished: String(work.first_publish_date ?? '').slice(0, 10),
+            datePublished: safeStr(work.first_publish_date).slice(0, 10),
             translator: [],
             publisher: '',
             producer: '',
@@ -284,16 +284,16 @@ async function searchOpenLibraryByIsbn(isbn: string): Promise<Candidate | null> 
         if (resp.status !== 200) return null;
         const doc = (resp.json?.docs as Record<string, unknown>[])?.[0];
         if (!doc) return null;
-        const key = String(doc.key ?? '');
+        const key = safeStr(doc.key);
         const id = key.replace('/works/', '');
         if (!id) return null;
         const authors = (doc.author_name as string[]) ?? [];
         return {
             id,
-            title: String(doc.title ?? ''),
+            title: safeStr(doc.title),
             sub_title: authors.join(', '),
             type: 'book',
-            year: String(doc.first_publish_year ?? ''),
+            year: safeStr(doc.first_publish_year),
             source: 'openlibrary' as const,
         };
     } catch {
@@ -314,11 +314,11 @@ async function searchGoogleBooksByIsbn(isbn: string): Promise<Candidate | null> 
         const info = (item.volumeInfo as Record<string, unknown>) ?? {};
         const authors = (info.authors as string[]) ?? [];
         return {
-            id: String(item.id ?? ''),
-            title: String(info.title ?? ''),
+            id: safeStr(item.id),
+            title: safeStr(info.title),
             sub_title: authors.join(', '),
             type: 'book',
-            year: String(info.publishedDate ?? '').slice(0, 4),
+            year: safeStr(info.publishedDate).slice(0, 4),
             source: 'googlebooks' as const,
         };
     } catch {
