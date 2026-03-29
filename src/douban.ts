@@ -209,7 +209,7 @@ export async function searchDouban(query: string, mediaType?: string): Promise<C
                 results.push({
                     id: safeStr(item.id),
                     title: safeStr(item.title),
-                    sub_title: safeStr(item.sub_title) || safeStr(item.author_name),
+                    sub_title: item.sub_title != null ? safeStr(item.sub_title) : safeStr(item.author_name),
                     type: itemType,
                     year: safeStr(item.year),
                     source: 'douban',
