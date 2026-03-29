@@ -33,6 +33,5 @@ __pycache__/
 .pytest_cache/
 esbuild.config.mjs
 
-
-# ai docs
-docs/superpwoers/
+# the superpower docs
+docs/superpowers/
