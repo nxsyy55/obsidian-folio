@@ -1,7 +1,7 @@
 {
   "id": "folio",
   "name": "Folio",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "minAppVersion": "1.0.0",
   "description": "Create notes for books and movies. Searches Douban, IMDB, Open Library, and Google Books automatically.",
   "author": "Blue Double",

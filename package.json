@@ -1,6 +1,6 @@
 {
   "name": "folio",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Create Obsidian notes for books and movies — Douban, IMDB, Open Library, Google Books",
   "main": "main.js",
   "scripts": {
