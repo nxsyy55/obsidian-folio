@@ -87,6 +87,16 @@ export function splitTitleOriginal(fullTitle: string): [string, string] {
     return [cleaned, ''];
 }
 
+/**
+ * Safely coerce an unknown API value to string.
+ * Unlike String(x ?? ''), this never produces "[object Object]".
+ */
+export function safeStr(val: unknown): string {
+    if (typeof val === 'string') return val;
+    if (typeof val === 'number') return String(val);
+    return '';
+}
+
 function getInfoText(infoEl: Element | null, label: string): string {
     if (!infoEl) return '';
     const spans = Array.from(infoEl.querySelectorAll('span.pl'));
