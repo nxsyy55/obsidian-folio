@@ -13,7 +13,7 @@ By merging rich, structured metadata from global sources (like Douban or IMDB) w
 ## ✨ Features
 
 - 📑 **Data-Driven Templates**: The plugin handles the boring stuff. By defining your own note template, you can set placeholder fields (e.g., `{{title}}`, `{{author}}`, `{{cover_url}}`). Folio fetches this exact data from external sources and injects it into your template, ensuring every new note looks exactly how you like it, instantly.
-- 🌏 **Smart Multi-Source Routing**: No need to tell the plugin where to look. It automatically detects Chinese (CJK) or Latin characters in your query to intelligently route requests to the most relevant database—Douban for Chinese media, and IMDB or Open Library for English/Western media.
+- 🌏 **Smart Multi-Source Routing**: No need to tell the plugin where to look. It automatically detects Chinese (CJK) or Latin characters in your query to intelligently route requests to the most relevant database—Douban for Chinese media, and IMDB or Open Library for English/Western media. A source dropdown lets you override this and pick any source manually (useful for titles like "1984" on Douban).
 - ⚡ **Frictionless Workflow**: One command (`Folio: Add Note`) to rule them all. Find a book, add it to Obsidian, and have your note ready for writing in seconds. It completely removes the manual copy-pasting required to build a structured media log.
 - 🛠️ **Fully Customizable System**: Make the plugin conform to your Zettelkasten or organization method. Choose your specific inbox folder, set request delays to respect rate limits, and design multiple templates for different media types.
 - 💾 **Local-First Cache**: Fast performance, always. Folio includes built-in JSON caching. Once a book or movie is fetched, its metadata is stored locally in your vault, preventing redundant API calls and ensuring your note-creation workflow remains snappy.
@@ -51,23 +51,25 @@ Go to **Settings → Folio** to configure the following:
 3.  Enter your query in the modal:
     * **Search**: Title, author, or keywords.
     * **ISBN**: For exact book lookups (bypasses title search).
-4.  **Source Logic**:
-    * **CJK Characters**: Searches Douban + Google Books.
-    * **Latin Characters**: Searches IMDB + Open Library.
-    * **ISBN**: Parallel search across all compatible sources.
+    * **Source**: Override automatic routing — pick Douban, IMDB, Open Library, or Google Books directly.
+4.  **Source logic**:
+    * **Auto (by language)** — default: CJK → Douban + Google Books; Latin → IMDB + Open Library.
+    * **Manual source**: Forces search to a specific database regardless of query language.
+    * **ISBN**: Parallel search across all compatible sources (ignores source selection).
 
 ---
 ## ⚠️ Network Disclosure
 This plugin connects to the following external services:
-* **Services**: Douban, IMDB, Open Library, Google Books, and optionally Firecrawl.
+* **Services**: Douban, IMDB (search only), Wikidata, Open Library, Google Books, and optionally Firecrawl.
 * **Privacy**: Only search queries and IDs are sent to these services. No local vault data or personal notes are ever uploaded.
+* **Note**: IMDB is used for search suggestions only. Detailed metadata (genre, director, country) is fetched from Wikidata's public SPARQL endpoint using the IMDB ID.
 
 ---
 ## 🛠️ Troubleshooting
 
 * **Empty Douban Fields**: Ensure your Firecrawl API key is valid and entered correctly.
 * **Folder Error**: Ensure the "Inbox folder" defined in settings actually exists in your vault.
-* **Stale Data**: Delete entries in `.obsidian/plugins/folio/cache.json` to force a re-fetch.
+* **Stale Data**: Delete entries in `<vault>/.obsidian/plugins/folio/cache.json` to force a re-fetch.
 
 ---
 
