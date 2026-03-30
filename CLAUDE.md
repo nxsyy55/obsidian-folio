@@ -28,9 +28,9 @@ Seven TypeScript modules in `src/`:
 - `src/settings.ts` — Settings tab: `firecrawlApiKey`, `inboxDir`, `requestDelay`, `templates`
 - `src/modal.ts` — Search input modal, disambiguation list modal, blank-note type modal
 - `src/douban.ts` — Douban HTTP: `searchDouban`, `searchByIsbn`, `fetchBookDetail`, `fetchMovieDetail`
-- `src/sources.ts` — Multi-source: `detectLanguage`, `searchAll`, `searchWithSource`, `searchByIsbnAll`, IMDB/Open Library/Google Books search + detail fetchers. IMDB detail uses Wikidata SPARQL (`wdt:P345`).
+- `src/sources.ts` — Multi-source: `detectLanguage`, `searchAll`, `searchWithSource`, `searchByIsbnAll`, Open Library/Google Books search + detail fetchers. IMDB removed (see note below).
 - `src/notes.ts` — Pure renderers: `renderBookNote`, `renderMovieNote`, `renderBlankNote` → markdown string
-- `src/cache.ts` — Cache read/write via vault adapter (`book_<id>` / `movie_<id>` / `gb_<id>` / `imdb_<id>` / `ol_<id>` keys)
+- `src/cache.ts` — Cache read/write via vault adapter (`book_<id>` / `movie_<id>` / `gb_<id>` / `ol_<id>` keys)
 
 **Data flow:**
 ```
@@ -39,9 +39,8 @@ Command → DoubanModal (query + ISBN + source + template)
   └── Title → searchWithSource(query, source)
                 ├── 'auto' → searchAll (language-routed)
                 │             ├── CJK   → searchDouban + searchGoogleBooks
-                │             └── Latin → searchIMDB + searchOpenLibrary
+                │             └── Latin → searchOpenLibrary + searchGoogleBooks
                 ├── 'douban'      → searchDouban
-                ├── 'imdb'        → searchIMDB
                 ├── 'openlibrary' → searchOpenLibrary
                 └── 'googlebooks' → searchGoogleBooks
                       ├── 1 result  → fetchAndCreate → renderNote → vault.create
@@ -51,15 +50,15 @@ Command → DoubanModal (query + ISBN + source + template)
 
 **Firecrawl integration:** `POST https://api.firecrawl.dev/v1/scrape` with `Authorization: Bearer <key>`. Used only by `fetchBookDetail` and `fetchMovieDetail` in `douban.ts`. Falls back to HTML parse on failure.
 
-**IMDB detail fetch:** Uses Wikidata SPARQL (`https://query.wikidata.org/sparql`, property `wdt:P345`). IMDB pages return HTTP 202 + empty body (AWS WAF JavaScript challenge) and cannot be scraped directly. No API key required for Wikidata.
+**IMDB removed:** IMDB was removed as a source. The search API (`v3.sg.media-imdb.com`) works fine, but IMDB detail pages return HTTP 202 + empty body (AWS WAF JS challenge) that cannot be bypassed without a real browser. Wikidata SPARQL (`wdt:P345`) was attempted as a detail fallback but proved unreliable in practice. Latin-language auto-routing now uses Open Library + Google Books instead. Do not attempt to re-add IMDB scraping via `requestUrl` or Firecrawl — it will never work.
 
 **Cache:** JSON at `{vault.configDir}/plugins/folio/cache.json` via `vault.adapter`. Delete an entry to force re-fetch.
 
 ## Key Constraints
 
 - Notes land in `inboxDir` first; user moves them to final location
-- Firecrawl is optional — only Douban detail fetches use it; IMDB uses Wikidata SPARQL, all other sources use `requestUrl` directly
-- `requestDelay` applies only to Douban fetches; IMDB/Open Library/Google Books fire immediately
+- Firecrawl is optional — only Douban detail fetches use it; all other sources use `requestUrl` directly
+- `requestDelay` applies only to Douban fetches; Open Library/Google Books fire immediately
 - `manifest.json`, `styles.css`, `main.js` must stay at repo root (Obsidian marketplace requirement)
 
 ## Obsidian Marketplace Validation Rules

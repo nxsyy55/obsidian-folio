@@ -5,7 +5,6 @@ import {
     searchByIsbnAll,
     searchWithSource,
     fetchGoogleBooksDetail,
-    fetchIMDBDetail,
     fetchOpenLibraryDetail,
 } from './sources';
 import { fetchBookDetail, fetchMovieDetail } from './douban';
@@ -22,7 +21,6 @@ interface RunOptions {
 
 const SOURCE_LABEL: Record<string, string> = {
     douban: 'Douban',
-    imdb: 'IMDB',
     openlibrary: 'Open Library',
     googlebooks: 'Google Books',
 };
@@ -139,13 +137,7 @@ export default class DoubanPlugin extends Plugin {
             let content: string;
             let noteTitle: string;
 
-            if (source === 'imdb') {
-                const meta = await fetchIMDBDetail(id, this.app.vault);
-                if (!meta) { notice.hide(); new Notice('Failed to fetch from IMDB.', 8000); return; }
-                content = renderMovieNote(meta, options.template);
-                noteTitle = meta.title || title;
-
-            } else if (source === 'openlibrary') {
+            if (source === 'openlibrary') {
                 const meta = await fetchOpenLibraryDetail(id, this.app.vault);
                 if (!meta) { notice.hide(); new Notice('Failed to fetch from Open Library.', 8000); return; }
                 content = renderBookNote(meta, options.template);

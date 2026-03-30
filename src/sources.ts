@@ -1,6 +1,11 @@
 import { requestUrl, Vault } from 'obsidian';
+// Note: IMDB was removed as a source (2026-03-30). IMDB detail pages return HTTP 202 + empty body
+// (AWS WAF JS challenge) that cannot be bypassed without a real browser. The search API
+// (v3.sg.media-imdb.com) still works but returning results users cannot fetch details for
+// creates a broken UX. Wikidata SPARQL (wdt:P345) was tried as a fallback but proved unreliable
+// in practice. Latin-language auto-routing now falls back to Open Library + Google Books.
 import type { Candidate } from './modal';
-import { BookMetadata, MovieMetadata } from './notes';
+import { BookMetadata } from './notes';
 import { loadCache, saveCache } from './cache';
 import { searchDouban, searchByIsbn, safeStr } from './douban';
 
@@ -74,102 +79,6 @@ export async function fetchGoogleBooksDetail(id: string, vault: Vault): Promise<
             producer: '',
             isbn,
             url: `https://books.google.com/books?id=${id}`,
-        };
-
-        cache[cacheKey] = result;
-        await saveCache(vault, cache);
-        return result;
-    } catch {
-        return null;
-    }
-}
-
-// ── IMDB ───────────────────────────────────────────────────────────────────
-
-function imdbQidToType(qid: string): string {
-    return qid === 'tvSeries' || qid === 'tvMiniSeries' ? 'teleplay' : 'movie';
-}
-
-
-export async function searchIMDB(query: string): Promise<Candidate[]> {
-    try {
-        const firstChar = encodeURIComponent(query.trim()[0]?.toLowerCase() ?? 'x');
-        const resp = await requestUrl({
-            url: `https://v3.sg.media-imdb.com/suggestion/${firstChar}/${encodeURIComponent(query)}.json`,
-            headers: { 'User-Agent': DEFAULT_UA },
-            throw: false,
-        });
-        if (resp.status !== 200) return [];
-        const items = (resp.json?.d as Record<string, unknown>[]) ?? [];
-        return items
-            .filter(item => ['movie', 'tvSeries', 'tvMiniSeries'].includes(safeStr(item.qid)))
-            .map(item => ({
-                id: safeStr(item.id),
-                title: safeStr(item.l),
-                sub_title: safeStr(item.s),
-                type: imdbQidToType(safeStr(item.qid)),
-                year: safeStr(item.y),
-                source: 'imdb' as const,
-            }));
-    } catch {
-        return [];
-    }
-}
-
-export async function fetchIMDBDetail(id: string, vault: Vault): Promise<MovieMetadata | null> {
-    const cache = await loadCache(vault);
-    const cacheKey = `imdb_${id}`;
-    if (cache[cacheKey]) return cache[cacheKey] as MovieMetadata;
-
-    // IMDB pages return HTTP 202 + empty body (AWS WAF JS challenge) — scraping is not possible.
-    // Wikidata indexes IMDB IDs via wdt:P345 and provides structured film metadata.
-    const sparql = `SELECT DISTINCT ?filmLabel ?dirLabel ?genLabel ?ctryLabel ?instanceLabel
-  (STR(?date) AS ?dateStr) (STR(?dur) AS ?durStr)
-WHERE {
-  ?film wdt:P345 "${id}".
-  ?film rdfs:label ?filmLabel. FILTER(LANG(?filmLabel) = "en")
-  OPTIONAL { ?film wdt:P57 ?dir. ?dir rdfs:label ?dirLabel. FILTER(LANG(?dirLabel) = "en") }
-  OPTIONAL { ?film wdt:P136 ?gen. ?gen rdfs:label ?genLabel. FILTER(LANG(?genLabel) = "en") }
-  OPTIONAL { ?film wdt:P495 ?ctry. ?ctry rdfs:label ?ctryLabel. FILTER(LANG(?ctryLabel) = "en") }
-  OPTIONAL { ?film wdt:P577 ?date. }
-  OPTIONAL { ?film wdt:P2047 ?dur. }
-  OPTIONAL { ?film wdt:P31 ?instance. ?instance rdfs:label ?instanceLabel. FILTER(LANG(?instanceLabel) = "en") }
-}
-LIMIT 100`;
-
-    try {
-        const resp = await requestUrl({
-            url: `https://query.wikidata.org/sparql?query=${encodeURIComponent(sparql)}&format=json`,
-            headers: { 'User-Agent': DEFAULT_UA, 'Accept': 'application/sparql-results+json' },
-            throw: false,
-        });
-        if (resp.status !== 200) return null;
-
-        type WDBinding = Record<string, { value: string } | undefined>;
-        const bindings = (resp.json?.results?.bindings as WDBinding[]) ?? [];
-        if (!bindings.length) return null;
-
-        const uniq = (field: string): string[] =>
-            [...new Set(bindings.map(b => b[field]?.value ?? '').filter(Boolean))];
-
-        const instances = uniq('instanceLabel').map(s => s.toLowerCase());
-        const isTV = instances.some(s =>
-            s.includes('television series') || s.includes('miniseries') || s.includes('tv series')
-        );
-        const durMin = bindings[0].durStr?.value ?? '';
-
-        const result: MovieMetadata = {
-            title: bindings[0].filmLabel?.value ?? '',
-            type: isTV ? 'teleplay' : 'movie',
-            originalTitle: '',
-            genre: uniq('genLabel'),
-            datePublished: (bindings[0].dateStr?.value ?? '').slice(0, 10),
-            director: uniq('dirLabel').slice(0, 5),
-            score: '',
-            url: `https://www.imdb.com/title/${id}/`,
-            country: uniq('ctryLabel'),
-            IMDb: id,
-            time: durMin ? `${durMin} min` : '',
         };
 
         cache[cacheKey] = result;
@@ -338,14 +247,13 @@ export async function searchAll(query: string): Promise<Candidate[]> {
     const searches: Promise<Candidate[]>[] =
         lang === 'cjk'
             ? [searchDouban(query), searchGoogleBooks(query)]
-            : [searchIMDB(query), searchOpenLibrary(query)];
+            : [searchOpenLibrary(query), searchGoogleBooks(query)];
     const results = await Promise.all(searches);
     return results.flat();
 }
 
 export async function searchWithSource(query: string, source: string): Promise<Candidate[]> {
     if (source === 'douban') return searchDouban(query);
-    if (source === 'imdb') return searchIMDB(query);
     if (source === 'openlibrary') return searchOpenLibrary(query);
     if (source === 'googlebooks') return searchGoogleBooks(query);
     return searchAll(query);

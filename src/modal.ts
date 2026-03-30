@@ -7,7 +7,7 @@ export interface Candidate {
     sub_title: string;
     type: string;
     year: string;
-    source: 'douban' | 'imdb' | 'openlibrary' | 'googlebooks';
+    source: 'douban' | 'openlibrary' | 'googlebooks';
 }
 
 export class DoubanModal extends Modal {
@@ -52,7 +52,6 @@ export class DoubanModal extends Modal {
         [
             { value: 'auto', text: 'Auto (by language)' },
             { value: 'douban', text: 'Douban' },
-            { value: 'imdb', text: 'IMDB' },
             { value: 'openlibrary', text: 'Open Library' },
             { value: 'googlebooks', text: 'Google Books' },
         ].forEach(opt => sourceSelect.createEl('option', { value: opt.value, text: opt.text }));
@@ -106,7 +105,6 @@ export class DisambiguationModal extends Modal {
 
         const sourceLabel: Record<string, string> = {
             douban: 'Douban',
-            imdb: 'IMDB',
             openlibrary: 'Open Library',
             googlebooks: 'Google Books',
         };
