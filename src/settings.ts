@@ -136,7 +136,7 @@ export class DoubanSettingTab extends PluginSettingTab {
             });
 
             const addBtn = containerEl.createEl('button', {
-                text: '+ Add template',
+                text: 'Add template',
                 cls: 'folio-add-template-btn',
             });
             addBtn.addEventListener('click', () => {

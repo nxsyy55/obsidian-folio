@@ -27,7 +27,7 @@ export class DoubanModal extends Modal {
     onOpen(): void {
         const { contentEl } = this;
         contentEl.empty();
-        this.titleEl.setText('Folio: Add note');
+        this.titleEl.setText('Add note');
 
         const makeLabel = (text: string) => {
             contentEl.createEl('label', { text, cls: 'folio-field-label' });
@@ -49,7 +49,7 @@ export class DoubanModal extends Modal {
 
         makeLabel('Template');
         const tplSelect = contentEl.createEl('select', { cls: 'folio-field' });
-        tplSelect.createEl('option', { text: '— None —', value: '' });
+        tplSelect.createEl('option', { text: '— none —', value: '' });
         this.templates.forEach((tpl, i) => {
             tplSelect.createEl('option', { text: tpl.name, value: String(i) });
         });
@@ -92,7 +92,7 @@ export class DisambiguationModal extends Modal {
     onOpen(): void {
         const { contentEl } = this;
         contentEl.empty();
-        this.titleEl.setText('Folio: Select result');
+        this.titleEl.setText('Select result');
 
         const sourceLabel: Record<string, string> = {
             douban: 'Douban',
@@ -136,7 +136,7 @@ export class BlankNoteModal extends Modal {
     onOpen(): void {
         const { contentEl } = this;
         contentEl.empty();
-        this.titleEl.setText('Folio: No results found');
+        this.titleEl.setText('No results found');
 
         contentEl.createEl('p', {
             text: `No results for "${this.title}". Create a blank note as:`,
