@@ -2,7 +2,7 @@ import { requestUrl, Vault } from 'obsidian';
 import type { Candidate } from './modal';
 import { BookMetadata, MovieMetadata } from './notes';
 import { loadCache, saveCache } from './cache';
-import { searchDouban, searchByIsbn, safeStr } from './douban';
+import { searchDouban, searchByIsbn, safeStr, firecrawlScrape } from './douban';
 
 const DEFAULT_UA =
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 ' +
@@ -125,20 +125,41 @@ export async function searchIMDB(query: string): Promise<Candidate[]> {
     }
 }
 
-export async function fetchIMDBDetail(id: string, vault: Vault): Promise<MovieMetadata | null> {
+export async function fetchIMDBDetail(id: string, vault: Vault, firecrawlApiKey?: string): Promise<MovieMetadata | null> {
     const cache = await loadCache(vault);
     const cacheKey = `imdb_${id}`;
     if (cache[cacheKey]) return cache[cacheKey] as MovieMetadata;
 
-    try {
-        const resp = await requestUrl({
-            url: `https://www.imdb.com/title/${id}/`,
-            headers: { 'User-Agent': DEFAULT_UA, 'Accept-Language': 'en-US,en;q=0.9' },
-            throw: false,
-        });
-        if (resp.status !== 200) return null;
+    const url = `https://www.imdb.com/title/${id}/`;
+    let html: string | null = null;
 
-        const doc = new DOMParser().parseFromString(resp.text, 'text/html');
+    // Primary: Firecrawl (bypasses IMDB bot detection)
+    if (firecrawlApiKey) {
+        try {
+            const fc = await firecrawlScrape(url, firecrawlApiKey);
+            html = fc.html ?? null;
+        } catch (e) {
+            console.warn(`folio: Firecrawl failed for IMDB ${id}:`, e);
+        }
+    }
+
+    // Fallback: direct request
+    if (!html) {
+        try {
+            const resp = await requestUrl({
+                url,
+                headers: { 'User-Agent': DEFAULT_UA, 'Accept-Language': 'en-US,en;q=0.9' },
+                throw: false,
+            });
+            if (resp.status !== 200) return null;
+            html = resp.text;
+        } catch {
+            return null;
+        }
+    }
+
+    try {
+        const doc = new DOMParser().parseFromString(html, 'text/html');
         const ldScript = doc.querySelector('script[type="application/ld+json"]');
         if (!ldScript?.textContent) return null;
 
