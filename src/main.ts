@@ -2,8 +2,8 @@ import { Plugin, Notice, normalizePath } from 'obsidian';
 import { DoubanSettings, DEFAULT_SETTINGS, DoubanSettingTab, FolioTemplate } from './settings';
 import { DoubanModal, DisambiguationModal, BlankNoteModal } from './modal';
 import {
-    searchAll,
     searchByIsbnAll,
+    searchWithSource,
     fetchGoogleBooksDetail,
     fetchIMDBDetail,
     fetchOpenLibraryDetail,
@@ -47,12 +47,12 @@ export default class DoubanPlugin extends Plugin {
             id: 'add-note',
             name: 'Add note',
             callback: () => {
-                new DoubanModal(this.app, this.settings.templates, (query, isbn, tplIndex) => {
+                new DoubanModal(this.app, this.settings.templates, (query, isbn, tplIndex, source) => {
                     const template = tplIndex >= 0 ? this.settings.templates[tplIndex] : null;
                     if (isbn) {
                         void this.runBackend('', { isbn, template });
                     } else {
-                        void this.runBackend(query, { template });
+                        void this.runBackend(query, { template, source });
                     }
                 }).open();
             },
@@ -86,7 +86,7 @@ export default class DoubanPlugin extends Plugin {
             }
 
             // ── Title search path ──────────────────────────────────────────
-            const results = await searchAll(title);
+            const results = await searchWithSource(title, options.source ?? 'auto');
             notice.hide();
 
             if (results.length === 0) {

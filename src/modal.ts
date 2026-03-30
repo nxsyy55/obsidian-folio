@@ -12,12 +12,12 @@ export interface Candidate {
 
 export class DoubanModal extends Modal {
     private templates: FolioTemplate[];
-    private onSubmit: (query: string, isbn: string, templateIndex: number) => void;
+    private onSubmit: (query: string, isbn: string, templateIndex: number, source: string) => void;
 
     constructor(
         app: App,
         templates: FolioTemplate[],
-        onSubmit: (query: string, isbn: string, templateIndex: number) => void
+        onSubmit: (query: string, isbn: string, templateIndex: number, source: string) => void
     ) {
         super(app);
         this.templates = templates;
@@ -47,6 +47,16 @@ export class DoubanModal extends Modal {
             cls: 'folio-field',
         });
 
+        makeLabel('Source');
+        const sourceSelect = contentEl.createEl('select', { cls: 'folio-field' });
+        [
+            { value: 'auto', text: 'Auto (by language)' },
+            { value: 'douban', text: 'Douban' },
+            { value: 'imdb', text: 'IMDB' },
+            { value: 'openlibrary', text: 'Open Library' },
+            { value: 'googlebooks', text: 'Google Books' },
+        ].forEach(opt => sourceSelect.createEl('option', { value: opt.value, text: opt.text }));
+
         makeLabel('Template');
         const tplSelect = contentEl.createEl('select', { cls: 'folio-field' });
         tplSelect.createEl('option', { text: '— none —', value: '' });
@@ -60,7 +70,7 @@ export class DoubanModal extends Modal {
             if (!query && !isbn) return;
             const tplIndex = tplSelect.value !== '' ? parseInt(tplSelect.value, 10) : -1;
             this.close();
-            this.onSubmit(query, isbn, tplIndex);
+            this.onSubmit(query, isbn, tplIndex, sourceSelect.value);
         };
 
         searchEl.addEventListener('keydown', (e: KeyboardEvent) => { if (e.key === 'Enter') doSubmit(); });

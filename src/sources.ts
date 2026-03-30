@@ -367,3 +367,11 @@ export async function searchAll(query: string): Promise<Candidate[]> {
     const results = await Promise.all(searches);
     return results.flat();
 }
+
+export async function searchWithSource(query: string, source: string): Promise<Candidate[]> {
+    if (source === 'douban') return searchDouban(query);
+    if (source === 'imdb') return searchIMDB(query);
+    if (source === 'openlibrary') return searchOpenLibrary(query);
+    if (source === 'googlebooks') return searchGoogleBooks(query);
+    return searchAll(query);
+}
