@@ -140,7 +140,7 @@ export default class DoubanPlugin extends Plugin {
             let noteTitle: string;
 
             if (source === 'imdb') {
-                const meta = await fetchIMDBDetail(id, this.app.vault, this.settings.firecrawlApiKey);
+                const meta = await fetchIMDBDetail(id, this.app.vault);
                 if (!meta) { notice.hide(); new Notice('Failed to fetch from IMDB.', 8000); return; }
                 content = renderMovieNote(meta, options.template);
                 noteTitle = meta.title || title;

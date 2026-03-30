@@ -151,7 +151,7 @@ interface FirecrawlData {
     extract?: Record<string, unknown>;
 }
 
-export async function firecrawlScrape(
+async function firecrawlScrape(
     url: string,
     apiKey: string,
     schema?: object

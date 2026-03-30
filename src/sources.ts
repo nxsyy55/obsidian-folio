@@ -2,7 +2,7 @@ import { requestUrl, Vault } from 'obsidian';
 import type { Candidate } from './modal';
 import { BookMetadata, MovieMetadata } from './notes';
 import { loadCache, saveCache } from './cache';
-import { searchDouban, searchByIsbn, safeStr, firecrawlScrape } from './douban';
+import { searchDouban, searchByIsbn, safeStr } from './douban';
 
 const DEFAULT_UA =
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 ' +
@@ -90,15 +90,6 @@ function imdbQidToType(qid: string): string {
     return qid === 'tvSeries' || qid === 'tvMiniSeries' ? 'teleplay' : 'movie';
 }
 
-function parseIso8601Duration(duration: string): string {
-    // "PT2H46M" → "2h 46min", "PT90M" → "90min"
-    const h = duration.match(/(\d+)H/)?.[1];
-    const m = duration.match(/(\d+)M/)?.[1];
-    if (h && m) return `${h}h ${m}min`;
-    if (h) return `${h}h`;
-    if (m) return `${m}min`;
-    return duration;
-}
 
 export async function searchIMDB(query: string): Promise<Candidate[]> {
     try {
@@ -125,76 +116,60 @@ export async function searchIMDB(query: string): Promise<Candidate[]> {
     }
 }
 
-export async function fetchIMDBDetail(id: string, vault: Vault, firecrawlApiKey?: string): Promise<MovieMetadata | null> {
+export async function fetchIMDBDetail(id: string, vault: Vault): Promise<MovieMetadata | null> {
     const cache = await loadCache(vault);
     const cacheKey = `imdb_${id}`;
     if (cache[cacheKey]) return cache[cacheKey] as MovieMetadata;
 
-    const url = `https://www.imdb.com/title/${id}/`;
-    let html: string | null = null;
-
-    // Primary: Firecrawl (bypasses IMDB bot detection)
-    if (firecrawlApiKey) {
-        try {
-            const fc = await firecrawlScrape(url, firecrawlApiKey);
-            html = fc.html ?? null;
-        } catch (e) {
-            console.warn(`folio: Firecrawl failed for IMDB ${id}:`, e);
-        }
-    }
-
-    // Fallback: direct request
-    if (!html) {
-        try {
-            const resp = await requestUrl({
-                url,
-                headers: { 'User-Agent': DEFAULT_UA, 'Accept-Language': 'en-US,en;q=0.9' },
-                throw: false,
-            });
-            if (resp.status !== 200) return null;
-            html = resp.text;
-        } catch {
-            return null;
-        }
-    }
+    // IMDB pages return HTTP 202 + empty body (AWS WAF JS challenge) — scraping is not possible.
+    // Wikidata indexes IMDB IDs via wdt:P345 and provides structured film metadata.
+    const sparql = `SELECT DISTINCT ?filmLabel ?dirLabel ?genLabel ?ctryLabel ?instanceLabel
+  (STR(?date) AS ?dateStr) (STR(?dur) AS ?durStr)
+WHERE {
+  ?film wdt:P345 "${id}".
+  ?film rdfs:label ?filmLabel. FILTER(LANG(?filmLabel) = "en")
+  OPTIONAL { ?film wdt:P57 ?dir. ?dir rdfs:label ?dirLabel. FILTER(LANG(?dirLabel) = "en") }
+  OPTIONAL { ?film wdt:P136 ?gen. ?gen rdfs:label ?genLabel. FILTER(LANG(?genLabel) = "en") }
+  OPTIONAL { ?film wdt:P495 ?ctry. ?ctry rdfs:label ?ctryLabel. FILTER(LANG(?ctryLabel) = "en") }
+  OPTIONAL { ?film wdt:P577 ?date. }
+  OPTIONAL { ?film wdt:P2047 ?dur. }
+  OPTIONAL { ?film wdt:P31 ?instance. ?instance rdfs:label ?instanceLabel. FILTER(LANG(?instanceLabel) = "en") }
+}
+LIMIT 100`;
 
     try {
-        const doc = new DOMParser().parseFromString(html, 'text/html');
-        const ldScript = doc.querySelector('script[type="application/ld+json"]');
-        if (!ldScript?.textContent) return null;
+        const resp = await requestUrl({
+            url: `https://query.wikidata.org/sparql?query=${encodeURIComponent(sparql)}&format=json`,
+            headers: { 'User-Agent': DEFAULT_UA, 'Accept': 'application/sparql-results+json' },
+            throw: false,
+        });
+        if (resp.status !== 200) return null;
 
-        const ld = JSON.parse(ldScript.textContent) as Record<string, unknown>;
+        type WDBinding = Record<string, { value: string } | undefined>;
+        const bindings = (resp.json?.results?.bindings as WDBinding[]) ?? [];
+        if (!bindings.length) return null;
 
-        const ldType = safeStr(ld['@type']);
-        const type: 'movie' | 'teleplay' =
-            ldType === 'TVSeries' || ldType === 'TVMiniSeries' ? 'teleplay' : 'movie';
+        const uniq = (field: string): string[] =>
+            [...new Set(bindings.map(b => b[field]?.value ?? '').filter(Boolean))];
 
-        const rawDirector = ld.director;
-        const directors: string[] = Array.isArray(rawDirector)
-            ? (rawDirector as Record<string, unknown>[]).map(d => safeStr(d.name))
-            : rawDirector
-            ? [safeStr((rawDirector as Record<string, unknown>).name)]
-            : [];
-
-        const rawCountry = ld.countryOfOrigin;
-        const countries: string[] = Array.isArray(rawCountry)
-            ? (rawCountry as Record<string, unknown>[]).map(c => safeStr(c.name))
-            : rawCountry
-            ? [safeStr((rawCountry as Record<string, unknown>).name)]
-            : [];
+        const instances = uniq('instanceLabel').map(s => s.toLowerCase());
+        const isTV = instances.some(s =>
+            s.includes('television series') || s.includes('miniseries') || s.includes('tv series')
+        );
+        const durMin = bindings[0].durStr?.value ?? '';
 
         const result: MovieMetadata = {
-            title: safeStr(ld.name),
-            type,
+            title: bindings[0].filmLabel?.value ?? '',
+            type: isTV ? 'teleplay' : 'movie',
             originalTitle: '',
-            genre: Array.isArray(ld.genre) ? (ld.genre as string[]) : ld.genre ? [safeStr(ld.genre)] : [],
-            datePublished: safeStr(ld.datePublished),
-            director: directors,
-            score: safeStr((ld.aggregateRating as Record<string, unknown>)?.ratingValue),
+            genre: uniq('genLabel'),
+            datePublished: (bindings[0].dateStr?.value ?? '').slice(0, 10),
+            director: uniq('dirLabel').slice(0, 5),
+            score: '',
             url: `https://www.imdb.com/title/${id}/`,
-            country: countries,
+            country: uniq('ctryLabel'),
             IMDb: id,
-            time: ld.duration ? parseIso8601Duration(safeStr(ld.duration)) : '',
+            time: durMin ? `${durMin} min` : '',
         };
 
         cache[cacheKey] = result;
