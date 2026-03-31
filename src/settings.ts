@@ -42,6 +42,7 @@ export class DoubanSettingTab extends PluginSettingTab {
             .setDesc('Get a free key at firecrawl.dev/app/api-keys. Used to fetch book and movie detail pages.')
             .addText(text =>
                 text
+                    // eslint-disable-next-line obsidianmd/ui/sentence-case
                     .setPlaceholder('fc-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx')
                     .setValue(this.plugin.settings.firecrawlApiKey)
                     .onChange(value => {
@@ -55,7 +56,7 @@ export class DoubanSettingTab extends PluginSettingTab {
             .setDesc('Vault subfolder where new notes are created. Must exist in your vault.')
             .addText(text =>
                 text
-                    .setPlaceholder('inbox')
+                    .setPlaceholder('Inbox')
                     .setValue(this.plugin.settings.inboxDir)
                     .onChange(value => {
                         this.plugin.settings.inboxDir = value.trim() || 'inbox';
