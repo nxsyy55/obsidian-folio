@@ -33,6 +33,18 @@ By merging rich, structured metadata from global sources (like Douban or IMDB) w
     Go to **Settings → Community Plugins**, click **Reload**, find **Folio**, and toggle it on.
 
 ---
+
+## 🔧 Development
+
+**Before committing:** Run the linter to check code against Obsidian marketplace rules:
+```bash
+npm run lint        # Check for violations
+npm run lint:fix    # Auto-fix fixable violations
+npm run build       # Full build with linting gate
+```
+The build command fails if linting errors exist — this prevents marketplace submission rejections.
+
+---
 ## ⚙️ Configuration
 
 Go to **Settings → Folio** to configure the following:

@@ -7,7 +7,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ```bash
 npm install          # install deps
 npm run dev          # watch mode (esbuild, no type-check)
-npm run build        # type-check + esbuild production bundle
+npm run lint         # check code against Obsidian marketplace rules (gated into build)
+npm run lint:fix     # auto-fix linting violations where possible
+npm run build        # lint + type-check + esbuild production bundle (fails if lint errors exist)
 npm run deploy       # build + copy main.js/manifest.json/styles.css to vault plugin folder
 ```
 
@@ -63,7 +65,7 @@ Command → DoubanModal (query + ISBN + source + template)
 
 ## Obsidian Marketplace Validation Rules
 
-These are enforced by the marketplace linter — violations cause submission rejection:
+**ESLint gating:** This project uses `eslint-plugin-obsidianmd` to enforce marketplace rules at lint time. `npm run build` runs `npm run lint` first — builds fail if violations exist. This prevents marketplace rejections. See `eslint.config.js` for rule configuration. Key enforced rules:
 
 **Config directory:** Never hardcode `.obsidian/`. Always use `this.app.vault.configDir` (from `Plugin`) or pass it through. The cache path must be `normalizePath(`${vault.configDir}/plugins/folio/cache.json`)`.
 
